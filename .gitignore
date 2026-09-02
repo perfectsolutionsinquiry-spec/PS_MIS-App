@@ -1,0 +1,23 @@
+# Builder workbooks. These carry live customer names, ledgers and phone numbers.
+# The app reads and writes them at runtime; they must never enter git history.
+*.xlsx
+*.xlsm
+*.xls
+*.csv
+!template/*.xlsx
+
+# Windows / macOS shell cruft
+Thumbs.db
+Desktop.ini
+.DS_Store
+$RECYCLE.BIN/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
+
+# Scratch
+tmp/
+scratch/

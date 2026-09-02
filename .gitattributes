@@ -1,0 +1,12 @@
+# Normalise everything to LF in the repository and in the working tree, so a
+# checkout on Windows does not show the whole file as changed.
+* text=auto eol=lf
+
+# Binary assets: never touch, never diff as text.
+*.xlsx  binary
+*.xlsm  binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.pdf   binary
+*.zip   binary
