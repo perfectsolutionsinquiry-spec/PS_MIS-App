@@ -75,4 +75,17 @@ describe.skipIf(!hasDb)("tenant isolation", () => {
       client.release();
     }
   });
+
+  it("a staff login sees every builder's customers", async () => {
+    const client = await pool.connect();
+    try {
+      await client.query("select set_config('app.is_staff', 'true', true)");
+      const result = await client.query("select full_name from customers");
+      const names = result.rows.map((r) => r.full_name);
+      expect(names).toContain("Customer belonging to A");
+      expect(names).toContain("Customer belonging to B");
+    } finally {
+      client.release();
+    }
+  });
 });
