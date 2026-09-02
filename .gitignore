@@ -21,3 +21,6 @@ $RECYCLE.BIN/
 # Scratch
 tmp/
 scratch/
+
+# Build output. Rebuild it with tools/build.ps1 rather than committing it.
+dist/
