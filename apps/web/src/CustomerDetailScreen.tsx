@@ -533,9 +533,9 @@ function SummaryTile({ label, value, good }: { label: string; value: string; goo
       <div style={{ color: "#64748b", fontSize: "0.75rem", fontWeight: 500 }}>{label}</div>
       <div
         style={{
-          fontFamily: "var(--font-serif)",
+          // Sans, not serif — see OverviewScreen.tsx's KpiTile for why.
           fontSize: "1.3rem",
-          fontWeight: 600,
+          fontWeight: 700,
           color: good ? "#15803d" : "#0f172a",
           marginTop: "0.25rem",
         }}

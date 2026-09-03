@@ -173,9 +173,12 @@ function KpiTile({
       <div style={{ color: "#64748b", fontSize: "0.78rem", fontWeight: 500 }}>{label}</div>
       <div
         style={{
-          fontFamily: "var(--font-serif)",
+          // Sans, not serif — the brand pairing's "fact-table values" role
+          // was tried here first and the user preferred numbers in Plex
+          // Sans, so this just inherits the body default (index.css)
+          // rather than opting into var(--font-serif).
           fontSize: "1.6rem",
-          fontWeight: 600,
+          fontWeight: 700,
           color: good ? "#15803d" : "#0f172a",
           margin: "0.35rem 0 0.15rem",
         }}

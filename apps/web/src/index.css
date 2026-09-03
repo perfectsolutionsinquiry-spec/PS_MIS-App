@@ -6,17 +6,20 @@
    concerns that inline styles on individual components can't express, so
    this one file is the exception.
 
-   Roles match the brochure these fonts were bought for
-   (PerfectSolutions_Brochure_Fonts/INSTALL_README.txt): IBM Plex Sans for
-   titles, section titles, labels and general UI chrome; IBM Plex Serif for
-   body copy and — the use this app leans on most — "fact-table values",
-   i.e. the actual figures (KPI tiles, summary tiles). Components that want
-   the serif treatment for a value opt in with `fontFamily: "var(--font-serif)"`;
-   everything else inherits the sans default from `body` below. */
+   The brochure these fonts were bought for pairs IBM Plex Sans (titles/
+   labels/UI chrome) with IBM Plex Serif (body copy and figures) — see
+   PerfectSolutions_Brochure_Fonts/INSTALL_README.txt. This app tried
+   that same split on its own figures (KPI tiles, summary tiles) and the
+   user explicitly wanted numbers in Sans instead, the opposite of the
+   brochure's split — so IBM Plex Sans is the only brand font this app
+   actually uses, everywhere, via the `body` rule below. IBM Plex Serif
+   is intentionally not loaded (apps/web/index.html) or defined here —
+   add it back the same way (a Google Fonts family + a --font-serif
+   token) if a real use for it ever comes up; don't load a font nothing
+   on the page renders with. */
 
 :root {
   --font-sans: "IBM Plex Sans", system-ui, sans-serif;
-  --font-serif: "IBM Plex Serif", Georgia, serif;
 }
 
 body {
