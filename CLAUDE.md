@@ -70,21 +70,45 @@ See `apps/api/src/auth.ts` (`withTenantClient`) for exactly how.
 
 - **API**: `https://perfect4developers.onrender.com` (Render web service,
   free tier — cold starts). Health check: `/health`. DB check: `/db-check`.
-- **Frontend**: `https://perfect4developers-app.onrender.com` (Render
-  Static Site). Build command `npm install && npm run build
-  --workspace=apps/web`, publish dir `apps/web/dist`.
+- **Frontend**: `https://app.perfectfinadvisory.com` (custom domain, Render
+  Static Site under the hood — `perfect4developers-app.onrender.com` still
+  resolves too, but Clerk's production instance is domain-restricted, so the
+  app only actually works from the custom domain now; treat the onrender.com
+  address as legacy, not the one to hand anyone). Build command `npm install
+  && npm run build --workspace=apps/web`, publish dir `apps/web/dist`.
 - **Database**: Neon Postgres, project "perfect4developers", region AWS
   US West 2 (Oregon, matched to Render's region), free tier (permanent,
   unlike Render's own free Postgres which deletes after 30 days — this is
   why Neon was chosen over Render's built-in database).
 - **Auth**: Clerk, "Consumer" app type (not B2B/Organizations — tenancy is
-  handled in our own DB, not Clerk's). Currently on `pk_test_`/`sk_test_`
-  keys (development mode banner shows on the sign-in page — expected,
-  switch to production keys before this goes out to real builders).
+  handled in our own DB, not Clerk's). **On production keys (`pk_live_`/
+  `sk_live_`) as of 4 September 2026** — guardrail #3 from
+  `docs/LAUNCH_GUARDRAILS.md`, done. Production domain is
+  `app.perfectfinadvisory.com`, with Clerk's own subdomains
+  `clerk.perfectfinadvisory.com` (Frontend API) and
+  `accounts.perfectfinadvisory.com` (Account Portal) — all three, plus the
+  three email-sending CNAMEs, are DNS records at MilesWeb (the registrar for
+  `perfectfinadvisory.com`; nameservers are the giveaway if this ever needs
+  rediscovering — `*.mydnsvault.com`). Clerk would not begin issuing SSL
+  certificates for the domain until *every* configured section (Application
+  **and** Email) verified — not just the Application CNAMEs that actually
+  gate sign-in — which cost real time to discover; worth knowing before
+  anyone next touches Clerk's domain config. Development-instance keys and
+  users (`pk_test_`/`sk_test_`) still exist and still work independently, for
+  local development.
 
 Both Render services auto-deploy on every push to `main`. Actual secret
 values (Clerk keys, `DATABASE_URL`) live in each service's Environment tab
-on Render and in Neon's dashboard — intentionally not restated here.
+on Render and in Neon's dashboard — intentionally not restated here. One
+non-obvious gotcha confirmed the hard way: `VITE_`-prefixed variables are
+baked into the frontend's build at deploy time, not read at runtime — saving
+a new value in Render's Environment tab does **not** take effect until that
+service's next build actually runs, and Render does not reliably
+auto-trigger one on an env-var-only change. Trigger **Manual Deploy → Deploy
+latest commit** on `perfect4developers-app` explicitly after changing any
+`VITE_` variable, and confirm by checking the deployed bundle's own content
+(`/assets/index-*.js`) for the expected value, not just the filename hash —
+don't assume a save took effect.
 
 ## Git
 
@@ -135,7 +159,11 @@ on Render and in Neon's dashboard — intentionally not restated here.
   14. `1adfdbe` — Bring Vision and Roadmap + Launch Guardrails into the repo
       as `docs/`, plus the builder-onboarding runbook and a draft
       support-access commitment (guardrails items 2 and 5)
-  15. this file — points at the four new docs above, catches up this list
+  15. `6e39a19` — Update CLAUDE.md: point at the new guardrails docs, catch
+      up commit list
+  16. this file — Clerk switched to production keys and a custom domain
+      (`app.perfectfinadvisory.com`), Shilpkaar's builder login created for
+      the first time (see "Real data loaded" below), guardrail #3 done
 
 ## Database schema (13 tables, migrations 0001-0003)
 
@@ -192,6 +220,15 @@ committed to this repo):
   rows, 8,950 recovery transactions.
 - Confirmed live via a count query in Neon and visually on the deployed
   dashboard (Azhar: "data visible").
+
+**Correction, 4 September 2026:** "data visible" above was always Azhar
+signed in as **staff** (which bypasses RLS and sees every builder), not a
+real Shilpkaar builder login — `builder_users` was completely empty (0 rows)
+until tonight, discovered while re-linking production Clerk users per
+`docs/BUILDER_ONBOARDING.md`. Shilpkaar's first real builder-side login now
+exists (`builder_users` has one row, `role: admin`, linked to a real
+production Clerk user) — this is the actual first run of that runbook's
+verification step for this builder, not a formality.
 
 ## Bugs found and fixed (all real, all found by actually running things, not just reading the code)
 
@@ -289,13 +326,14 @@ someone's logged in, especially if a tile looks off.
 
 ## Not started yet
 
-- The four chart cards under Overview's "Collection & loan pipeline" section
-  (disbursement split, loan by bank, outstanding by customer, daily
-  collection) — currently a placeholder. No charting library is in
-  `apps/web/package.json` yet; the plan is hand-rolled SVG (matching how
-  `archive/html-tool`'s `src/charts.js` did it) specifically to avoid adding
-  a dependency that can't be typechecked or installed locally (see the note
-  above about no Node on this machine).
+- Two of Overview's four "Collection & loan pipeline" chart cards are built
+  (disbursement split — a donut, `DonutChart.tsx`; loan by bank — a bar,
+  `BarChart.tsx`; both hand-rolled SVG, no charting library, colors validated
+  against the dataviz skill's checks). **Outstanding by customer and daily
+  collection are still the placeholder.** No charting library is in
+  `apps/web/package.json`, deliberately — a dependency that can't be
+  typechecked or installed locally (no Node on this machine) is real risk to
+  add blind.
 - No admin UI for provisioning `staff_users`/`builder_users` — still
   manual SQL via Neon's SQL Editor.
 - Fuller CRUD screens beyond the read-only customer list: add/edit
@@ -305,8 +343,6 @@ someone's logged in, especially if a tile looks off.
   value, agreement value, GST/stamp-duty breakdowns) from the existing MIS
   HTML tool.
 - Real pagination on `/customers` (see above).
-- Clerk is still on test keys — needs production keys before real builders
-  use this (`docs/LAUNCH_GUARDRAILS.md` item 3 / `docs/BUILDER_ONBOARDING.md`).
 - A real Neon backup restore hasn't been rehearsed yet — "backups are
   enabled" and "we've confirmed we can restore one" are different claims,
   only the second is a guardrail (`docs/LAUNCH_GUARDRAILS.md` item 4).

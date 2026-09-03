@@ -1,14 +1,21 @@
 # Launch Guardrails — Builder Isolation and Pre-Launch Standards
 
-> **Status, 4 September 2026:** item 1 below ("wire the isolation test into CI") is
-> done — `.github/workflows/ci.yml` runs the real suite against a real Postgres on every
-> push, connected as a non-superuser role so `FORCE ROW LEVEL SECURITY` is actually being
-> tested rather than bypassed (see that file's own comments for why the first attempt at
-> this had to be corrected). It does not yet **block** a push — see that file for what
-> would still be needed for a real gate. Items 2–5 are what's left before builder #2;
-> tracked in `docs/BUILDER_ONBOARDING.md` (item 2) and `docs/SUPPORT_ACCESS_COMMITMENT.md`
-> (item 5) so this document can stay the original decision record rather than being
-> edited into a live checklist.
+> **Status, 4 September 2026:** items 1–3 below are done. Item 1 ("wire the isolation
+> test into CI") — `.github/workflows/ci.yml` runs the real suite against a real Postgres
+> on every push, connected as a non-superuser role so `FORCE ROW LEVEL SECURITY` is
+> actually being tested rather than bypassed (see that file's own comments for why the
+> first attempt at this had to be corrected). It does not yet **block** a push — see that
+> file for what would still be needed for a real gate. Item 2 ("a written, repeatable
+> builder-onboarding runbook") — `docs/BUILDER_ONBOARDING.md`, and its first real use
+> tonight found that Shilpkaar's builder-side login never actually existed until then (see
+> `CLAUDE.md`'s "Real data loaded" correction) — the runbook's own verification step is
+> what surfaced that, which is the strongest evidence yet that step is worth keeping
+> mandatory. Item 3 ("move Clerk off test keys") — done; production keys, a verified
+> custom domain (`app.perfectfinadvisory.com`), both re-linked/created production users.
+> See `CLAUDE.md`'s "Live deployment" for what that took and what to know before touching
+> it again. Items 4–5 are what's left before builder #2; item 5 tracked in
+> `docs/SUPPORT_ACCESS_COMMITMENT.md` so this document can stay the original decision
+> record rather than being edited into a live checklist.
 
 Written 3 September 2026, in response to: "10 builders might log in — what are the
 standard things we discussed before launching this app." This is the decision record for
