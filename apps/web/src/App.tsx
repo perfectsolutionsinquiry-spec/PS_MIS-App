@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { SignedIn, SignedOut, SignIn, useAuth } from "@clerk/clerk-react";
 import Sidebar from "./Sidebar";
 import CustomersScreen from "./CustomersScreen";
+import CustomerDetailScreen from "./CustomerDetailScreen";
 import OverviewScreen from "./OverviewScreen";
 import type { Customer, DashboardKpis, Identity, PipelineData } from "./types";
 
@@ -23,6 +24,7 @@ function Shell() {
   const [pipeline, setPipeline] = useState<PipelineData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeScreen, setActiveScreen] = useState("overview");
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -72,7 +74,17 @@ function Shell() {
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#f8fafc", fontFamily: "system-ui, sans-serif" }}>
-      <Sidebar active={activeScreen} onNavigate={setActiveScreen} identity={identity} />
+      <Sidebar
+        active={activeScreen}
+        onNavigate={(screen) => {
+          // Switching screens from the sidebar always leaves customer-detail
+          // view — otherwise clicking "Customers" again while a detail page
+          // is open would just re-render the same detail page underneath.
+          setSelectedCustomerId(null);
+          setActiveScreen(screen);
+        }}
+        identity={identity}
+      />
 
       <main style={{ flex: 1, padding: "2rem 2.5rem", minWidth: 0 }}>
         {error && (
@@ -99,8 +111,12 @@ function Shell() {
           <OverviewScreen kpis={kpis} pipeline={pipeline} />
         )}
 
-        {!error && customers !== null && kpis !== null && activeScreen === "customers" && (
-          <CustomersScreen customers={customers} />
+        {!error && customers !== null && kpis !== null && activeScreen === "customers" && selectedCustomerId === null && (
+          <CustomersScreen customers={customers} onSelect={setSelectedCustomerId} />
+        )}
+
+        {!error && activeScreen === "customers" && selectedCustomerId !== null && (
+          <CustomerDetailScreen customerId={selectedCustomerId} onBack={() => setSelectedCustomerId(null)} />
         )}
       </main>
     </div>

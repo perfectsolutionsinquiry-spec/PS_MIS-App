@@ -35,7 +35,7 @@ function StageBadge({ stage }: { stage: string | null }) {
   );
 }
 
-export default function CustomersScreen({ customers }: { customers: Customer[] }) {
+export default function CustomersScreen({ customers, onSelect }: { customers: Customer[]; onSelect: (id: string) => void }) {
   const [query, setQuery] = useState("");
 
   // Client-side filter over what's already been fetched — no extra API
@@ -136,7 +136,13 @@ export default function CustomersScreen({ customers }: { customers: Customer[] }
                 </tr>
               ) : (
                 filtered.map((c) => (
-                  <tr key={c.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                  <tr
+                    key={c.id}
+                    onClick={() => onSelect(c.id)}
+                    style={{ borderBottom: "1px solid #f1f5f9", cursor: "pointer" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                  >
                     <td style={{ padding: "0.65rem 1rem", color: "#0f172a", fontWeight: 500 }}>{c.full_name}</td>
                     <td style={{ padding: "0.65rem 1rem", color: "#475569" }}>{c.phone ?? "—"}</td>
                     <td style={{ padding: "0.65rem 1rem", color: "#475569" }}>{c.email ?? "—"}</td>

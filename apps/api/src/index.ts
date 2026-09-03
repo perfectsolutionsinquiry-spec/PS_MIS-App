@@ -71,6 +71,247 @@ app.get("/customers", { preHandler: requireAuth }, async (request) => {
   });
 });
 
+// Reference data for the customer edit form's funding-bank dropdown. banks
+// has no RLS (db/migrations/0001_init.sql: "shared reference data") — every
+// builder picks from the same bank list, so this reads straight off the
+// pool, the same exemption /dashboard/overview's loan-by-bank query relies
+// on via its join.
+app.get("/banks", { preHandler: requireAuth }, async () => {
+  if (!pool) return { banks: [] };
+  const result = await pool.query("select id, name from banks order by name");
+  return { banks: result.rows };
+});
+
+// The customer detail screen (apps/web/src/CustomerDetailScreen.tsx) — the
+// full record CustomersScreen's list view only shows a handful of columns
+// from, plus co-applicants, the payment ledger, and this customer's
+// milestone schedule. Every numeric/date column is parsed here, once, same
+// reasoning as /dashboard/overview's num()/pctOrNull() — pg returns
+// `numeric` as a string and `date` as a JS Date, and the frontend should
+// never have to remember that per field.
+app.get("/customers/:id", { preHandler: requireAuth }, async (request, reply) => {
+  if (!pool) return reply.code(503).send({ error: "No database connected." });
+  const { id } = request.params as { id: string };
+
+  return withTenantClient(request.identity!, async (client) => {
+    const custResult = await client.query(
+      `select c.*, b.name as bank_name
+       from customers c
+       left join banks b on b.id = c.bank_id
+       where c.id = $1`,
+      [id]
+    );
+    // Zero rows here means either the id doesn't exist, or it belongs to a
+    // different builder and RLS correctly hid it — the response is the
+    // same 404 either way, deliberately: confirming *which* is true would
+    // leak whether a given id exists on another tenant's data.
+    if (custResult.rowCount === 0) return reply.code(404).send({ error: "Customer not found." });
+    const row = custResult.rows[0];
+
+    const [coApplicantsResult, paymentsResult, milestonesResult] = await Promise.all([
+      client.query(
+        `select id, full_name, relation, pan_number, aadhar_number, contact_number, email, profession, annual_income, address
+         from co_applicants where customer_id = $1 order by created_at`,
+        [id]
+      ),
+      client.query(
+        `select id, received_on, flat_cost_received, gst_received, remark, source
+         from recovery_transactions where customer_id = $1 order by received_on desc, created_at desc`,
+        [id]
+      ),
+      client.query(
+        `select cm.id, pm.milestone_name, cm.amount_due, cm.due_date, cm.status
+         from customer_milestones cm
+         join payment_milestones pm on pm.id = cm.payment_milestone_id
+         where cm.customer_id = $1
+         order by pm.sort_order`,
+        [id]
+      ),
+    ]);
+
+    const num = (v: unknown) => (v === null || v === undefined ? 0 : Number(v));
+    const numOrNull = (v: unknown) => (v === null || v === undefined ? null : Number(v));
+    const dateOrNull = (v: unknown) => (v === null || v === undefined ? null : (v as Date).toISOString().slice(0, 10));
+
+    // Same "amount due" definition as the Overview KPI tiles: milestones
+    // that have actually come due (due/partial/paid), not the eventual
+    // agreement value.
+    const totalReceived = paymentsResult.rows.reduce(
+      (sum, p) => sum + num(p.flat_cost_received) + num(p.gst_received),
+      0
+    );
+    const amountDue = milestonesResult.rows
+      .filter((m) => ["due", "partial", "paid"].includes(m.status))
+      .reduce((sum, m) => sum + num(m.amount_due), 0);
+
+    return {
+      customer: {
+        id: row.id,
+        psClientNo: row.ps_client_no,
+        agreementNo: row.agreement_no,
+        fullName: row.full_name,
+        contactNumber: row.contact_number,
+        email: row.email,
+        panNumber: row.pan_number,
+        aadharNumber: row.aadhar_number,
+        profession: row.profession,
+        address: row.address,
+        bookingDate: dateOrNull(row.booking_date),
+        agreementDate: dateOrNull(row.agreement_date),
+        possessionDate: dateOrNull(row.possession_date),
+        ratePerSqft: numOrNull(row.rate_per_sqft),
+        basicValue: numOrNull(row.basic_value),
+        parkingAmt: numOrNull(row.parking_amt),
+        infraLegalSocCharges: numOrNull(row.infra_legal_soc_charges),
+        agreementValue: numOrNull(row.agreement_value),
+        gstPct: numOrNull(row.gst_pct),
+        stampDutyPct: numOrNull(row.stamp_duty_pct),
+        stampDutyAmount: numOrNull(row.stamp_duty_amount),
+        registrationCharges: numOrNull(row.registration_charges),
+        tdsPct: numOrNull(row.tds_pct),
+        otherCharges: numOrNull(row.other_charges),
+        totalCostOfFlat: numOrNull(row.total_cost_of_flat),
+        fundingSource: row.funding_source,
+        loanExpected: numOrNull(row.loan_expected),
+        bankId: row.bank_id,
+        bankName: row.bank_name,
+        bankersContactNumber: row.bankers_contact_number,
+        loanFileNo: row.loan_file_no,
+        loanAmount: numOrNull(row.loan_amount),
+        ownContributionRequired: numOrNull(row.own_contribution_required),
+        ownContributionReceived: numOrNull(row.own_contribution_received),
+        stage: row.stage,
+        dlStatus: row.dl_status,
+        dlDate: dateOrNull(row.dl_date),
+        remark: row.remark,
+        createdAt: row.created_at,
+      },
+      coApplicants: coApplicantsResult.rows.map((r) => ({
+        id: r.id,
+        fullName: r.full_name,
+        relation: r.relation,
+        panNumber: r.pan_number,
+        aadharNumber: r.aadhar_number,
+        contactNumber: r.contact_number,
+        email: r.email,
+        profession: r.profession,
+        annualIncome: numOrNull(r.annual_income),
+        address: r.address,
+      })),
+      payments: paymentsResult.rows.map((r) => ({
+        id: r.id,
+        receivedOn: dateOrNull(r.received_on),
+        flatCostReceived: num(r.flat_cost_received),
+        gstReceived: num(r.gst_received),
+        remark: r.remark,
+        source: r.source,
+      })),
+      milestones: milestonesResult.rows.map((r) => ({
+        id: r.id,
+        milestoneName: r.milestone_name,
+        amountDue: num(r.amount_due),
+        dueDate: dateOrNull(r.due_date),
+        status: r.status,
+      })),
+      totals: { totalReceived, amountDue, balance: amountDue - totalReceived },
+    };
+  });
+});
+
+// Every column a customer's edit form is allowed to change. Built from a
+// fixed array, not the request body's own keys, so a client can never make
+// this UPDATE touch a column that isn't on this list — id, builder_id,
+// inventory_unit_id, assigned_staff_id, ps_client_no (unique workspace-wide,
+// not something to edit casually), and created_at are deliberately absent.
+const EDITABLE_CUSTOMER_FIELDS = [
+  "agreement_no", "full_name", "contact_number", "email", "pan_number", "aadhar_number", "profession", "address",
+  "booking_date", "agreement_date", "possession_date",
+  "rate_per_sqft", "basic_value", "parking_amt", "infra_legal_soc_charges", "agreement_value",
+  "gst_pct", "stamp_duty_pct", "stamp_duty_amount", "registration_charges", "tds_pct", "other_charges", "total_cost_of_flat",
+  "funding_source", "loan_expected", "bank_id", "bankers_contact_number", "loan_file_no", "loan_amount",
+  "own_contribution_required", "own_contribution_received",
+  "stage", "dl_status", "dl_date", "remark",
+];
+
+app.patch("/customers/:id", { preHandler: requireAuth }, async (request, reply) => {
+  if (!pool) return reply.code(503).send({ error: "No database connected." });
+  const { id } = request.params as { id: string };
+  const body = (request.body ?? {}) as Record<string, unknown>;
+
+  const setClauses: string[] = [];
+  const values: unknown[] = [];
+  for (const field of EDITABLE_CUSTOMER_FIELDS) {
+    if (!Object.prototype.hasOwnProperty.call(body, field)) continue;
+    let value = body[field];
+    // full_name is not null in the schema — reject an empty name here
+    // rather than let the database reject it as an opaque constraint
+    // error the frontend would have to reverse-engineer.
+    if (field === "full_name" && (typeof value !== "string" || value.trim() === "")) {
+      return reply.code(400).send({ error: "Name cannot be empty." });
+    }
+    // A cleared text input arrives as "" — every other column here is
+    // nullable, and "" is never the intended value for a date/number/text
+    // field on this form, so treat it as "clear this field."
+    if (value === "") value = null;
+    values.push(value);
+    setClauses.push(`${field} = $${values.length}`);
+  }
+  if (setClauses.length === 0) return reply.code(400).send({ error: "No editable fields in request body." });
+
+  values.push(id);
+  return withTenantClient(request.identity!, async (client) => {
+    const result = await client.query(
+      `update customers set ${setClauses.join(", ")} where id = $${values.length} returning id`,
+      values
+    );
+    if (result.rowCount === 0) return reply.code(404).send({ error: "Customer not found." });
+    return { ok: true };
+  });
+});
+
+// Recording a payment is the one write this app makes that Launch
+// Guardrails' "financial records are never deleted, only reversed" standard
+// actually governs — so this route only ever inserts, on purpose. There is
+// no PATCH/DELETE for a recovery_transactions row; correcting one means a
+// separate offsetting entry, not editing history, and that reversal flow
+// isn't built yet (recorded as an open gap, not implemented as a shortcut).
+app.post("/customers/:id/payments", { preHandler: requireAuth }, async (request, reply) => {
+  if (!pool) return reply.code(503).send({ error: "No database connected." });
+  const { id } = request.params as { id: string };
+  // Snake_case body keys, matching PATCH /customers/:id above rather than
+  // the camelCase this route's own GET response uses — one convention for
+  // "what a write body looks like" (the DB column names, directly) across
+  // both write endpoints on this resource, kept distinct from "what a read
+  // response looks like" (camelCase, matching the rest of this app).
+  const body = (request.body ?? {}) as {
+    received_on?: string; flat_cost_received?: number; gst_received?: number; remark?: string; source?: string;
+  };
+
+  if (!body.received_on) return reply.code(400).send({ error: "Date received is required." });
+  const flatCost = Number(body.flat_cost_received ?? 0);
+  const gst = Number(body.gst_received ?? 0);
+  if (!(flatCost > 0) && !(gst > 0)) {
+    return reply.code(400).send({ error: "Enter an amount received (flat cost and/or GST) greater than zero." });
+  }
+
+  return withTenantClient(request.identity!, async (client) => {
+    // builder_id comes from the customer row this INSERT...SELECT actually
+    // finds, never from the client — and that SELECT is itself RLS-scoped,
+    // so a customer id from another builder simply matches zero rows here
+    // rather than needing a separate ownership check first.
+    const result = await client.query(
+      `insert into recovery_transactions (builder_id, customer_id, received_on, flat_cost_received, gst_received, remark, source)
+       select c.builder_id, c.id, $2::date, $3::numeric, $4::numeric, $5, $6
+       from customers c
+       where c.id = $1
+       returning id`,
+      [id, body.received_on, flatCost, gst, body.remark ?? null, body.source ?? null]
+    );
+    if (result.rowCount === 0) return reply.code(404).send({ error: "Customer not found." });
+    return { ok: true, id: result.rows[0].id };
+  });
+});
+
 // Overview screen's six KPI tiles (apps/web/src/OverviewScreen.tsx) — the
 // same figures the old single-file MIS tool's Portfolio Overview showed
 // (archive/html-tool, src/charts.js renderKpis), computed here against the
