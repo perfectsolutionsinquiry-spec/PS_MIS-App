@@ -108,8 +108,11 @@ on Render and in Neon's dashboard — intentionally not restated here.
   5. `e22159c` — Fix RLS enforcement, tenant-scope bug, and customers query
      column (the three-bugs fix, see below)
   6. `fde6cdc` — Add sidebar navigation and Customers screen
-  7. this file — project context for Claude Code (listed without a hash: it
-     is the commit that adds this line)
+  7. `45627a4` — Add CLAUDE.md: project context for a fresh session
+  8. `e740ae4` — Update CLAUDE.md: this repo was renamed from MIS-App,
+     consolidate to one clone
+  9. `114d5c0` — Add a real Overview dashboard: nav rail, KPI tiles, one new
+     API endpoint (see "Current UI" below)
 
 ## Database schema (13 tables, migrations 0001-0003)
 
@@ -208,27 +211,68 @@ Full reasoning for all of these is inline as comments in
 
 ## Current UI
 
+The look-and-feel target is the old single-file MIS tool's dashboard
+(`archive/html-tool`, its Portfolio Overview screen) — a reference for shape
+and style, not a literal spec to copy pixel for pixel. Building it as a
+sequence of real, working increments rather than one big screen: KPI tiles
+first (cheap, real SQL, no new dependency), the chart cards next.
+
 `apps/web/src`:
-- `App.tsx` — top-level shell: Clerk `SignedOut`/`SignedIn`, fetches `/me`
-  and `/customers`, renders the sidebar + active screen.
-- `Sidebar.tsx` — dark sidebar, Perfect Solutions branding, nav items
-  (Customers is live; Builders/Projects/Recovery/Staff show as "soon" —
-  present in the UI so the intended shape is visible, not yet wired to
-  real screens).
+- `App.tsx` — top-level shell: Clerk `SignedOut`/`SignedIn`, fetches `/me`,
+  `/customers` and `/dashboard/overview` (the last two in parallel), renders
+  the sidebar + active screen. Default screen is Overview.
+- `Sidebar.tsx` — dark sidebar, grouped nav matching the old tool's rail
+  shape: Action Items (top) / **Dashboard** (Overview, Customer 360,
+  Reliability, Forecast) / **Records** (Customers, Collections, Documents) /
+  Settings. Only Overview and Customers are wired to a real screen; the rest
+  render disabled ("soon") so the intended shape is visible without
+  pretending they exist. Has a working collapse toggle (pure UI state).
+  This replaced an earlier Builders/Projects/Recovery/Staff draft nav once
+  the screenshot above gave a concrete shape to build toward instead — see
+  git history if that draft's reasoning is ever needed again.
+- `OverviewScreen.tsx` — the six KPI tiles (total agreement value, total
+  received, balance outstanding, loan amount sanctioned, collection
+  efficiency, units tracked), all from `/dashboard/overview`. The
+  "Collection & loan pipeline" chart cards below them (disbursement split,
+  loan by bank, outstanding by customer, daily collection) are not built yet
+  — that section is currently a placeholder.
+- `PageHeader.tsx` — shared all-caps title + icon-button row (email/export),
+  used by Overview and Customers so they read as one app. The icon buttons
+  are visibly present but disabled, same "soon" treatment as an unbuilt nav
+  item — nothing pretends to work that doesn't yet.
+- `format.ts` — presentational number formatting only (the Cr/L compact
+  form). Never derives a figure; every number it touches was already
+  computed by the API.
 - `CustomersScreen.tsx` — the actual data table: client-side search filter,
   color-coded stage badges (REGISTERED/BOOKED/AGREEMENT DONE/UNSOLD/HOLD/
   CANCELLED), all from data the API already sent — no new business logic
   on the frontend.
-- `types.ts` — shared `Identity`/`Customer` types matching what the API
-  returns.
+- `types.ts` — shared `Identity`/`Customer`/`DashboardKpis` types matching
+  what the API returns.
 
 `/customers` API route currently caps at `limit 1000` (was `limit 200`,
 which silently hid 88 of Shilpkaar's 288 real customers once seed data
 landed — this is a stopgap, not real pagination; fine today, won't be once
 a builder has thousands of customers).
 
+`/dashboard/overview` computes every figure and every percentage between
+them in one SQL query (`apps/api/src/index.ts`), RLS-scoped like every other
+route. "Amount due" — what balance outstanding and collection efficiency are
+measured against — is the sum of `customer_milestones.amount_due` where a
+milestone has actually come due (`status` in `due`/`partial`/`paid`), not the
+full eventual agreement value. Not yet independently confirmed against the
+live Shilpkaar/Aarambh numbers in the deployed UI — worth a look next time
+someone's logged in, especially if a tile looks off.
+
 ## Not started yet
 
+- The four chart cards under Overview's "Collection & loan pipeline" section
+  (disbursement split, loan by bank, outstanding by customer, daily
+  collection) — currently a placeholder. No charting library is in
+  `apps/web/package.json` yet; the plan is hand-rolled SVG (matching how
+  `archive/html-tool`'s `src/charts.js` did it) specifically to avoid adding
+  a dependency that can't be typechecked or installed locally (see the note
+  above about no Node on this machine).
 - No admin UI for provisioning `staff_users`/`builder_users` — still
   manual SQL via Neon's SQL Editor.
 - Fuller CRUD screens beyond the read-only customer list: add/edit
