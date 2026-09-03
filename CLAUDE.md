@@ -79,9 +79,24 @@ on Render and in Neon's dashboard — intentionally not restated here.
 ## Git
 
 - Repo: `https://github.com/perfectsolutionsinquiry-spec/PS_MIS-App.git`
-- Branch: `main` (no other branches — everything ships straight to main,
-  deploy-one-thing-at-a-time style, no PR workflow yet)
-- Local working copy: `C:\Users\AzharTamboli\Downloads\perfect-solutions-platform`
+  (this repo was originally created under the name `MIS-App` for an unrelated
+  single-file HTML tool, then renamed to `PS_MIS-App` and had this platform's
+  history force-pushed onto `main` in its place — see `archive/html-tool`
+  below for where that original project went. A remote still configured with
+  the old `MIS-App.git` URL will keep working: GitHub redirects renamed repos,
+  and `git push`/`git fetch` follow it, printing "This repository moved.")
+- Branch: `main` — everything ships straight to main, deploy-one-thing-at-a-time
+  style, no PR workflow yet. One other branch exists, `archive/html-tool`:
+  the two commits of the original single-file MIS tool that used to live at
+  this repo's name, kept so that work isn't lost, not part of this app's
+  history (no common ancestor with `main`). Tags `baseline-import` and
+  `html-tool-final` mark the same two commits.
+- Local working copy: `C:\Users\AzharTamboli\MIS-App` (note the folder name
+  still says `MIS-App` — that's just a local directory name and doesn't need
+  to match the repo's current name on GitHub. A second clone briefly existed
+  at `Downloads\perfect-solutions-platform`; it was deleted once confirmed
+  clean and pushed, to stop uncommitted work in one clone from going unseen
+  in the other.)
 - Commit history so far (oldest to newest):
   1. `ddbadb7` — Scaffold platform repo: increment 1 (health-check API +
      isolation test)
