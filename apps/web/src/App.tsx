@@ -127,7 +127,11 @@ export default function App() {
   return (
     <>
       <SignedOut>
-        <div style={{ display: "flex", justifyContent: "center", marginTop: "4rem" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "3rem" }}>
+          {/* Real brand asset (apps/web/public/logo-stacked.png), not text —
+              this is the one screen every user sees before they're signed
+              in, so it's worth actual branding rather than a plain widget. */}
+          <img src="/logo-stacked.png" alt="Perfect Solutions" style={{ width: 160, marginBottom: "1.5rem" }} />
           <SignIn />
         </div>
       </SignedOut>

@@ -127,23 +127,13 @@ export default function Sidebar({
     >
       <div style={{ padding: collapsed ? "1.1rem 0" : "1.25rem 1.25rem 1rem", borderBottom: "1px solid #1e293b" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: collapsed ? "center" : "flex-start", gap: "0.6rem" }}>
-          <div
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: 8,
-              background: "#2563eb",
-              color: "white",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontWeight: 700,
-              fontSize: "0.9rem",
-              flexShrink: 0,
-            }}
-          >
-            PS
-          </div>
+          {/* Real brand mark (apps/web/public/favicon.png) — replaces the
+              placeholder "PS" initials box this used to be. */}
+          <img
+            src="/favicon.png"
+            alt="Perfect Solutions"
+            style={{ width: 32, height: 32, flexShrink: 0, objectFit: "contain" }}
+          />
           {!collapsed && (
             <div>
               <div style={{ color: "white", fontWeight: 600, fontSize: "0.95rem", lineHeight: 1.2 }}>
