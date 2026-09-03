@@ -14,7 +14,8 @@ import pg from "pg";
 // not just that it was written.
 //
 // Requires a real Postgres reachable via DATABASE_URL with migrations
-// 0001-0003 already applied. Skips (not fails) if DATABASE_URL isn't set.
+// 0001-0003 already applied. Skips (not fails) if DATABASE_URL isn't set
+// locally; fails hard if that happens in CI (see the CI-only guard below).
 //
 // Every set_config call below uses is_local=true (the third argument) and
 // runs inside an explicit begin/commit around the query that follows it —
@@ -30,6 +31,22 @@ import pg from "pg";
 
 const { Pool } = pg;
 const hasDb = Boolean(process.env.DATABASE_URL);
+
+// describe.skipIf below is deliberate for local dev without a Postgres
+// running — but a *skipped* suite still exits 0, which is indistinguishable
+// from a passing one on GitHub's checks page. That gap is exactly what
+// Launch Guardrails - Builder Isolation and Pre-Launch Standards.md warns
+// about wiring this into CI to close, so in CI specifically (GitHub Actions
+// sets CI=true) a missing DATABASE_URL is a hard failure, not a silent skip:
+// the workflow (.github/workflows/ci.yml) always provides one, so this can
+// only fire if that workflow itself regresses.
+if (!hasDb && process.env.CI) {
+  throw new Error(
+    "DATABASE_URL is not set in CI — the tenant-isolation suite would silently " +
+      "skip instead of running, which is worse than not having this test at all. " +
+      "Check .github/workflows/ci.yml's postgres service and migration step."
+  );
+}
 
 async function inTransaction<T>(
   pool: pg.Pool,

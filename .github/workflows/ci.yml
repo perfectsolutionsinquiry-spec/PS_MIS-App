@@ -1,0 +1,91 @@
+name: CI
+
+# Guardrail #1 from claude/Launch Guardrails - Builder Isolation and
+# Pre-Launch Standards.md: "wire the isolation test into CI... the single
+# highest-value guardrail on this list, before builder #2's data goes in."
+#
+# This runs the real tenant-isolation suite (apps/api/tests/isolation.test.ts)
+# against a real Postgres with the real migrations applied — not a mock, the
+# actual RLS policies from db/migrations. What it does NOT yet do: block a
+# push to main from landing. This repo ships straight to main with no PR
+# gate (see CLAUDE.md), and GitHub Actions runs asynchronously after a push
+# is already received — a check can only report red/green after the fact,
+# it cannot refuse the push the way a pre-receive hook could. Turning this
+# into a real gate needs branch protection with "require status checks"
+# enabled in the repo's GitHub settings (Settings -> Branches), which is a
+# workflow-changing decision for a person to make, not something this file
+# can do on its own.
+#
+# Also builds both workspaces. Not asked for in the guardrails doc, but
+# nearly free once the job exists, and closes a real gap: there is no Node
+# on the machine these commits are usually pushed from, so today a broken
+# build is first caught by Render's deploy, minutes after the push and only
+# for whichever service was touched. This catches it in about a minute, for
+# both.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+      CI: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # Fail fast on a typecheck/build error before spending time on Postgres
+      # setup below.
+      - name: Build apps/api
+        run: npm run build -w apps/api
+
+      - name: Build apps/web
+        run: npm run build -w apps/web
+
+      # db/migrations files are numbered 0001, 0002, 0003... — a plain glob
+      # sort is already the correct apply order as long as that convention
+      # holds, so there is no separate list to keep in sync here.
+      - name: Apply migrations (0001, 0002, 0003, ...)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends postgresql-client
+          for f in db/migrations/*.sql; do
+            echo "-- applying $f"
+            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"
+          done
+
+      # apps/api/package.json's test script is `vitest run`, invoked here via
+      # the root's `npm test` -> `npm run test -w apps/api`. This is the
+      # suite that matters most in this repo: it proves builder A cannot
+      # read builder B's rows, a session with no builder set sees nothing,
+      # and staff sees everything — against the real RLS policies just
+      # applied above, not a mock of them.
+      - name: Tenant isolation + API tests
+        run: npm test
