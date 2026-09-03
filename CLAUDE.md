@@ -14,6 +14,16 @@ replace/complement an existing local Excel-based MIS tool (see
 `docs/DEPLOY_PLAN.md` and the "MIS Application - Handover" doc in the
 Claude Project this was built alongside).
 
+**Read these before touching auth, RLS, migrations, or onboarding a builder:**
+`docs/VISION_AND_ROADMAP.md` (why this platform exists, and where it sits in
+the four business lines), `docs/LAUNCH_GUARDRAILS.md` (the pre-launch
+checklist this repo is currently working through — start here for "is it
+safe to sign builder #2 yet"), `docs/BUILDER_ONBOARDING.md` (the exact
+runbook — no admin UI exists yet, so this procedure *is* the safety net), and
+`docs/SUPPORT_ACCESS_COMMITMENT.md` (draft-only, needs a lawyer — what staff
+cross-builder access is and isn't, said honestly about what's actually
+enforced today versus just committed to).
+
 **Hard rule that shaped every design decision below:** business logic and
 access control live on the server, never the client. The frontend
 (`apps/web`) only ever displays what the API sends it — it never computes a
@@ -113,6 +123,19 @@ on Render and in Neon's dashboard — intentionally not restated here.
      consolidate to one clone
   9. `114d5c0` — Add a real Overview dashboard: nav rail, KPI tiles, one new
      API endpoint (see "Current UI" below)
+  10. `b2d0912` — Add the disbursement-status and loan-by-bank chart cards
+  11. `b711f1c` — Fix donut ring getting clipped at its tangent points
+  12. `dbd7cfa` — Wire the tenant-isolation test into CI (first attempt —
+      see 13)
+  13. `8620ba7` — Fix CI: connect as a non-superuser role, not Postgres's
+      default superuser (12 connected as a superuser, which bypasses RLS
+      unconditionally — both isolation tests failed for that reason, not
+      because the app's RLS was broken; see the commit and
+      `.github/workflows/ci.yml`'s own comments)
+  14. `1adfdbe` — Bring Vision and Roadmap + Launch Guardrails into the repo
+      as `docs/`, plus the builder-onboarding runbook and a draft
+      support-access commitment (guardrails items 2 and 5)
+  15. this file — points at the four new docs above, catches up this list
 
 ## Database schema (13 tables, migrations 0001-0003)
 
@@ -282,10 +305,18 @@ someone's logged in, especially if a tile looks off.
   value, agreement value, GST/stamp-duty breakdowns) from the existing MIS
   HTML tool.
 - Real pagination on `/customers` (see above).
-- The isolation test suite isn't wired into CI — it's been run by hand,
-  successfully, but nothing runs it automatically on push yet.
 - Clerk is still on test keys — needs production keys before real builders
-  use this.
+  use this (`docs/LAUNCH_GUARDRAILS.md` item 3 / `docs/BUILDER_ONBOARDING.md`).
+- A real Neon backup restore hasn't been rehearsed yet — "backups are
+  enabled" and "we've confirmed we can restore one" are different claims,
+  only the second is a guardrail (`docs/LAUNCH_GUARDRAILS.md` item 4).
+- CI (`.github/workflows/ci.yml`) reports pass/fail on every push but doesn't
+  yet **block** one from landing — this repo has no PR gate, and GitHub
+  Actions runs after a push is already received. That needs branch
+  protection with "require status checks" turned on in the repo's GitHub
+  settings, a manual toggle for whoever has admin on the repo.
+- `docs/SUPPORT_ACCESS_COMMITMENT.md` is a draft — needs a lawyer before it
+  goes into anything a builder actually signs.
 
 ## Working style notes (for whoever picks this up next)
 
