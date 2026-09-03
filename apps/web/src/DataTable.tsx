@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { CSSProperties, ReactNode } from "react";
 
 // A generic, config-driven list view — sortable columns, a per-column
@@ -109,11 +110,24 @@ export default function DataTable<T>({
   const [globalQuery, setGlobalQuery] = useState("");
   const [sort, setSort] = useState<SortState | null>(null);
   const [columnFilters, setColumnFilters] = useState<Record<string, ColumnFilter>>({});
-  const [openFilterMenu, setOpenFilterMenu] = useState<string | null>(null);
+  // Which column's filter menu is open, plus the ⋮ button's own screen
+  // position at the moment it was clicked — the menu portals to
+  // document.body and uses this to place itself (see ColumnFilterMenu),
+  // rather than being a CSS-absolute child of the <th>. A table wrapper
+  // can scroll (overflow: auto, for a wide table) and a <th> is an
+  // unreliable positioning context across browsers besides — nesting the
+  // menu inside either one was clipping and misplacing it.
+  const [openFilter, setOpenFilter] = useState<{ key: string; top: number; left: number } | null>(null);
   const [configOpen, setConfigOpen] = useState(false);
   const [visibleKeys, setVisibleKeys] = useColumnVisibility(tableKey, columns);
 
-  const visibleColumns = columns.filter((c) => visibleKeys.includes(c.key));
+  // Column order in the table follows visibleKeys' own order, not
+  // `columns`' original declaration order — that's what lets the
+  // slushbucket's up/down reordering (ColumnConfigModal below) actually
+  // change what order columns appear in, not just which ones are shown.
+  const visibleColumns = visibleKeys
+    .map((key) => columns.find((c) => c.key === key))
+    .filter((c): c is ColumnDef<T> => c !== undefined);
 
   const filtered = useMemo(() => {
     let result = rows;
@@ -233,7 +247,6 @@ export default function DataTable<T>({
                     <th
                       key={col.key}
                       style={{
-                        position: "relative",
                         textAlign: "left",
                         padding: "0.65rem 1rem",
                         color: "#64748b",
@@ -255,7 +268,23 @@ export default function DataTable<T>({
                         {col.searchable !== false && (
                           <button
                             type="button"
-                            onClick={() => setOpenFilterMenu(openFilterMenu === col.key ? null : col.key)}
+                            // The portal's own outside-click listener
+                            // (ColumnFilterMenu) would otherwise see THIS
+                            // button's mousedown as "outside the menu" and
+                            // close it a moment before this onClick reopens
+                            // it — stopping propagation here keeps that
+                            // listener from ever seeing this click, so
+                            // clicking the same ⋮ twice reliably opens then
+                            // closes instead of flickering.
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onClick={(e) => {
+                              if (openFilter?.key === col.key) {
+                                setOpenFilter(null);
+                                return;
+                              }
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setOpenFilter({ key: col.key, top: rect.bottom + 4, left: rect.left });
+                            }}
                             title={`Search within ${col.label}`}
                             style={{
                               border: "none",
@@ -272,25 +301,6 @@ export default function DataTable<T>({
                           </button>
                         )}
                       </span>
-
-                      {openFilterMenu === col.key && (
-                        <ColumnFilterMenu
-                          filter={columnFilters[col.key]}
-                          onApply={(f) => {
-                            setColumnFilters((cur) => ({ ...cur, [col.key]: f }));
-                            setOpenFilterMenu(null);
-                          }}
-                          onClear={() => {
-                            setColumnFilters((cur) => {
-                              const next = { ...cur };
-                              delete next[col.key];
-                              return next;
-                            });
-                            setOpenFilterMenu(null);
-                          }}
-                          onClose={() => setOpenFilterMenu(null)}
-                        />
-                      )}
                     </th>
                   );
                 })}
@@ -325,6 +335,27 @@ export default function DataTable<T>({
         </div>
       )}
 
+      {openFilter && (
+        <ColumnFilterMenu
+          top={openFilter.top}
+          left={openFilter.left}
+          filter={columnFilters[openFilter.key]}
+          onApply={(f) => {
+            setColumnFilters((cur) => ({ ...cur, [openFilter.key]: f }));
+            setOpenFilter(null);
+          }}
+          onClear={() => {
+            setColumnFilters((cur) => {
+              const next = { ...cur };
+              delete next[openFilter.key];
+              return next;
+            });
+            setOpenFilter(null);
+          }}
+          onClose={() => setOpenFilter(null)}
+        />
+      )}
+
       {configOpen && (
         <ColumnConfigModal
           columns={columns}
@@ -345,9 +376,18 @@ function formatCell(value: string | number | null): string {
   return String(value);
 }
 
+// Portals into document.body and positions itself with `position: fixed`
+// at the ⋮ button's own on-screen coordinates (captured on click — see
+// DataTable's openFilter state) instead of being a CSS-absolute child of
+// the <th> it belongs to. A <th> is an unreliable positioning context for
+// an absolutely-positioned child across browsers, and the table's own
+// wrapper scrolls (overflow: auto, for a wide table) — both were clipping
+// and misplacing this menu when it lived inline in the table.
 function ColumnFilterMenu({
-  filter, onApply, onClear, onClose,
+  top, left, filter, onApply, onClear, onClose,
 }: {
+  top: number;
+  left: number;
   filter: ColumnFilter | undefined;
   onApply: (f: ColumnFilter) => void;
   onClear: () => void;
@@ -355,27 +395,49 @@ function ColumnFilterMenu({
 }) {
   const [operator, setOperator] = useState<ColumnFilter["operator"]>(filter?.operator ?? "contains");
   const [value, setValue] = useState(filter?.value ?? "");
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  return (
+  useEffect(() => {
+    function handlePointerDown(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) onClose();
+    }
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    // `position: fixed` tracks the viewport, not the button underneath it
+    // — if the page scrolls while this is open, the menu would otherwise
+    // visually detach from the ⋮ it came from. Closing on scroll is
+    // simpler and more predictable than re-measuring the button's
+    // position on every scroll event.
+    function handleScroll() {
+      onClose();
+    }
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("scroll", handleScroll, true);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("scroll", handleScroll, true);
+    };
+  }, [onClose]);
+
+  return createPortal(
     <div
+      ref={menuRef}
       style={{
-        position: "absolute",
-        top: "100%",
-        left: 0,
-        marginTop: 4,
+        position: "fixed",
+        top,
+        left,
         background: "white",
         border: "1px solid #e2e8f0",
         borderRadius: 8,
-        boxShadow: "0 4px 16px rgba(15,23,42,0.12)",
+        boxShadow: "0 4px 16px rgba(15,23,42,0.16)",
         padding: "0.75rem",
         width: 220,
-        zIndex: 20,
-        textTransform: "none",
-        letterSpacing: "normal",
-        fontWeight: 400,
+        zIndex: 1000,
         color: "#0f172a",
       }}
-      onClick={(e) => e.stopPropagation()}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
         <span style={{ fontSize: "0.75rem", fontWeight: 600 }}>Filter</span>
@@ -405,7 +467,8 @@ function ColumnFilterMenu({
           Clear
         </button>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -434,6 +497,30 @@ function ColumnConfigModal<T>({
   function moveToHidden(keys: string[]) {
     setVisible((cur) => cur.filter((k) => !keys.includes(k)));
     setVisibleSelection([]);
+  }
+
+  // The "Visible" list's own order becomes the table's actual column
+  // order (see DataTable's visibleColumns above) — these move the
+  // currently-selected item(s) one slot up/down within it. Selected
+  // indices are resolved fresh each call (not memoized) since `visible`
+  // changes on every move; moving up walks lowest-index-first and moving
+  // down walks highest-index-first so a multi-selected block shifts as a
+  // group instead of its members leapfrogging each other.
+  function moveSelected(direction: -1 | 1) {
+    if (visibleSelection.length === 0) return;
+    setVisible((cur) => {
+      const next = [...cur];
+      const indices = visibleSelection
+        .map((k) => next.indexOf(k))
+        .filter((i) => i !== -1)
+        .sort((a, b) => (direction === -1 ? a - b : b - a));
+      for (const i of indices) {
+        const swapWith = i + direction;
+        if (swapWith < 0 || swapWith >= next.length) continue;
+        [next[i], next[swapWith]] = [next[swapWith], next[i]];
+      }
+      return next;
+    });
   }
 
   return (
@@ -467,7 +554,13 @@ function ColumnConfigModal<T>({
           </div>
 
           <div style={{ flex: 1 }}>
-            <div style={fieldLabelStyle}>Visible</div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+              <div style={fieldLabelStyle}>Visible</div>
+              <div style={{ display: "flex", gap: "0.25rem", marginBottom: "0.25rem" }}>
+                <button type="button" title="Move up" onClick={() => moveSelected(-1)} style={{ ...slushBtnStyle, width: 24, height: 22, fontSize: "0.7rem" }}>↑</button>
+                <button type="button" title="Move down" onClick={() => moveSelected(1)} style={{ ...slushBtnStyle, width: 24, height: 22, fontSize: "0.7rem" }}>↓</button>
+              </div>
+            </div>
             <select
               multiple
               value={visibleSelection}
@@ -478,6 +571,9 @@ function ColumnConfigModal<T>({
                 <option key={key} value={key}>{labelFor(key)}</option>
               ))}
             </select>
+            <div style={{ fontSize: "0.7rem", color: "#94a3b8", marginTop: "0.25rem" }}>
+              This order becomes the table's column order.
+            </div>
           </div>
         </div>
 
