@@ -79,7 +79,13 @@ See `apps/api/src/auth.ts` (`withTenantClient`) for exactly how.
 - **Database**: Neon Postgres, project "perfect4developers", region AWS
   US West 2 (Oregon, matched to Render's region), free tier (permanent,
   unlike Render's own free Postgres which deletes after 30 days — this is
-  why Neon was chosen over Render's built-in database).
+  why Neon was chosen over Render's built-in database). **Point-in-time
+  restore rehearsed for real on 4 September 2026** (guardrail #4) — branched
+  `production` from ~1 hour in the past into a throwaway branch and confirmed
+  the real row counts came back (288 customers, 8,950 recovery transactions),
+  not an empty branch. The free plan's history retention is **6 hours** —
+  anything older than that cannot be recovered this way; know that before
+  relying on PITR as the answer to "how far back can we go."
 - **Auth**: Clerk, "Consumer" app type (not B2B/Organizations — tenancy is
   handled in our own DB, not Clerk's). **On production keys (`pk_live_`/
   `sk_live_`) as of 4 September 2026** — guardrail #3 from
@@ -161,9 +167,11 @@ don't assume a save took effect.
       support-access commitment (guardrails items 2 and 5)
   15. `6e39a19` — Update CLAUDE.md: point at the new guardrails docs, catch
       up commit list
-  16. this file — Clerk switched to production keys and a custom domain
+  16. `4a649c2` — Clerk switched to production keys and a custom domain
       (`app.perfectfinadvisory.com`), Shilpkaar's builder login created for
       the first time (see "Real data loaded" below), guardrail #3 done
+  17. this file — guardrail #4 done: Neon point-in-time restore actually
+      rehearsed, not just confirmed enabled
 
 ## Database schema (13 tables, migrations 0001-0003)
 
@@ -343,9 +351,6 @@ someone's logged in, especially if a tile looks off.
   value, agreement value, GST/stamp-duty breakdowns) from the existing MIS
   HTML tool.
 - Real pagination on `/customers` (see above).
-- A real Neon backup restore hasn't been rehearsed yet — "backups are
-  enabled" and "we've confirmed we can restore one" are different claims,
-  only the second is a guardrail (`docs/LAUNCH_GUARDRAILS.md` item 4).
 - CI (`.github/workflows/ci.yml`) reports pass/fail on every push but doesn't
   yet **block** one from landing — this repo has no PR gate, and GitHub
   Actions runs after a push is already received. That needs branch

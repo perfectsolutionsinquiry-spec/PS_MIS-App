@@ -1,6 +1,6 @@
 # Launch Guardrails — Builder Isolation and Pre-Launch Standards
 
-> **Status, 4 September 2026:** items 1–3 below are done. Item 1 ("wire the isolation
+> **Status, 4 September 2026:** items 1–4 below are done. Item 1 ("wire the isolation
 > test into CI") — `.github/workflows/ci.yml` runs the real suite against a real Postgres
 > on every push, connected as a non-superuser role so `FORCE ROW LEVEL SECURITY` is
 > actually being tested rather than bypassed (see that file's own comments for why the
@@ -13,7 +13,14 @@
 > mandatory. Item 3 ("move Clerk off test keys") — done; production keys, a verified
 > custom domain (`app.perfectfinadvisory.com`), both re-linked/created production users.
 > See `CLAUDE.md`'s "Live deployment" for what that took and what to know before touching
-> it again. Items 4–5 are what's left before builder #2; item 5 tracked in
+> it again. Item 4 ("confirm nightly backups and PITR are actually on... restore one for
+> real") — actually rehearsed, not just confirmed enabled: restored `production` to a new
+> Neon branch (`restore-test`) from a point roughly an hour in the past, then queried it
+> directly and got back the real numbers (288 customers, 8,950 recovery transactions) —
+> not an empty shell. One real constraint this surfaced: Neon's free plan retains only
+> **6 hours** of point-in-time history — a problem caught more than 6 hours after it
+> happened cannot be recovered this way, worth knowing before treating PITR as a safety
+> net for anything older than that. Item 5 is what's left before builder #2 — tracked in
 > `docs/SUPPORT_ACCESS_COMMITMENT.md` so this document can stay the original decision
 > record rather than being edited into a live checklist.
 
