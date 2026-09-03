@@ -1,6 +1,9 @@
-import { useMemo, useState } from "react";
-import type { Customer } from "./types";
+import { useState } from "react";
+import type { Customer, Identity } from "./types";
 import PageHeader from "./PageHeader";
+import DataTable from "./DataTable";
+import type { ColumnDef } from "./DataTable";
+import NewCustomerModal from "./NewCustomerModal";
 
 // Purely presentational — colors a stage badge based on the exact text the
 // API sends back. Falls back to a neutral badge for any stage value not
@@ -35,126 +38,58 @@ function StageBadge({ stage }: { stage: string | null }) {
   );
 }
 
-export default function CustomersScreen({ customers, onSelect }: { customers: Customer[]; onSelect: (id: string) => void }) {
-  const [query, setQuery] = useState("");
+// Column config for DataTable.tsx (apps/web/src/DataTable.tsx) — the
+// generic sortable/searchable/column-configurable table every future list
+// screen (Projects, Towers, Banks, ...) is meant to reuse. This is the
+// first table wired up to it.
+const CUSTOMER_COLUMNS: ColumnDef<Customer>[] = [
+  { key: "full_name", label: "Name", type: "text", accessor: (c) => c.full_name },
+  { key: "phone", label: "Phone", type: "text", accessor: (c) => c.phone },
+  { key: "email", label: "Email", type: "text", accessor: (c) => c.email },
+  {
+    key: "stage",
+    label: "Stage",
+    type: "text",
+    accessor: (c) => c.stage,
+    render: (c) => <StageBadge stage={c.stage} />,
+  },
+];
 
-  // Client-side filter over what's already been fetched — no extra API
-  // call, no server-side logic added just to support a search box.
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return customers;
-    return customers.filter(
-      (c) =>
-        c.full_name.toLowerCase().includes(q) ||
-        (c.phone ?? "").toLowerCase().includes(q) ||
-        (c.email ?? "").toLowerCase().includes(q) ||
-        (c.stage ?? "").toLowerCase().includes(q)
-    );
-  }, [customers, query]);
+export default function CustomersScreen({
+  customers, identity, onSelect, onCreated,
+}: {
+  customers: Customer[];
+  identity: Identity | null;
+  onSelect: (id: string) => void;
+  onCreated: (id: string) => void;
+}) {
+  const [creating, setCreating] = useState(false);
 
   return (
     <div>
       <PageHeader title="Customers" />
 
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: "1.25rem",
-          gap: "1rem",
-          flexWrap: "wrap",
-        }}
-      >
-        <p style={{ color: "#64748b", fontSize: "0.85rem", margin: 0 }}>
-          {customers.length === 0
-            ? "No customers yet."
-            : `Showing ${filtered.length} of ${customers.length} customer${customers.length === 1 ? "" : "s"}`}
-        </p>
+      <DataTable
+        tableKey="customers"
+        columns={CUSTOMER_COLUMNS}
+        rows={customers}
+        getRowId={(c) => c.id}
+        onRowClick={(c) => onSelect(c.id)}
+        searchPlaceholder="Search name, phone, email, stage…"
+        onNew={() => setCreating(true)}
+        newLabel="New customer"
+        emptyLabel="No customers yet."
+      />
 
-        {customers.length > 0 && (
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search name, phone, email, stage…"
-            style={{
-              padding: "0.5rem 0.85rem",
-              borderRadius: 8,
-              border: "1px solid #e2e8f0",
-              fontSize: "0.85rem",
-              width: 280,
-              outline: "none",
-              background: "white",
-            }}
-          />
-        )}
-      </div>
-
-      {customers.length === 0 ? (
-        <div
-          style={{
-            background: "white",
-            border: "1px solid #e2e8f0",
-            borderRadius: 12,
-            padding: "3rem 1rem",
-            textAlign: "center",
-            color: "#94a3b8",
-            fontSize: "0.9rem",
+      {creating && (
+        <NewCustomerModal
+          identity={identity}
+          onClose={() => setCreating(false)}
+          onCreated={(id) => {
+            setCreating(false);
+            onCreated(id);
           }}
-        >
-          No customers yet.
-        </div>
-      ) : (
-        <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.87rem" }}>
-            <thead>
-              <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
-                {["Name", "Phone", "Email", "Stage"].map((h) => (
-                  <th
-                    key={h}
-                    style={{
-                      textAlign: "left",
-                      padding: "0.65rem 1rem",
-                      color: "#64748b",
-                      fontWeight: 600,
-                      fontSize: "0.72rem",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.04em",
-                    }}
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={4} style={{ padding: "2rem 1rem", textAlign: "center", color: "#94a3b8" }}>
-                    No customers match "{query}".
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((c) => (
-                  <tr
-                    key={c.id}
-                    onClick={() => onSelect(c.id)}
-                    style={{ borderBottom: "1px solid #f1f5f9", cursor: "pointer" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                  >
-                    <td style={{ padding: "0.65rem 1rem", color: "#0f172a", fontWeight: 500 }}>{c.full_name}</td>
-                    <td style={{ padding: "0.65rem 1rem", color: "#475569" }}>{c.phone ?? "—"}</td>
-                    <td style={{ padding: "0.65rem 1rem", color: "#475569" }}>{c.email ?? "—"}</td>
-                    <td style={{ padding: "0.65rem 1rem" }}>
-                      <StageBadge stage={c.stage} />
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+        />
       )}
     </div>
   );

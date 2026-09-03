@@ -26,6 +26,24 @@ function Shell() {
   const [activeScreen, setActiveScreen] = useState("overview");
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
 
+  // Pulled out of the initial-load effect below so "New customer" can
+  // re-run just this fetch afterwards, without re-fetching /me or
+  // /dashboard/overview along with it.
+  async function loadCustomers() {
+    const token = await getToken();
+    const res = await fetch(`${API_URL}/customers`, { headers: { Authorization: `Bearer ${token}` } });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      // A failed /customers call used to silently render as "No customers
+      // yet." instead of surfacing the error — found by running the real
+      // query against the seeded schema. Fixed by checking .ok here
+      // instead of assuming success.
+      setError(body.error ?? body.message ?? `Server said: ${res.status}`);
+      return;
+    }
+    setCustomers(body.customers ?? []);
+  }
+
   useEffect(() => {
     (async () => {
       try {
@@ -43,21 +61,7 @@ function Shell() {
 
         // Both only need the token, not each other or /me's result, so they
         // run together rather than one after another.
-        const [customersRes, overviewRes] = await Promise.all([
-          fetch(`${API_URL}/customers`, { headers }),
-          fetch(`${API_URL}/dashboard/overview`, { headers }),
-        ]);
-
-        const customersBody = await customersRes.json().catch(() => ({}));
-        if (!customersRes.ok) {
-          // A failed /customers call used to silently render as "No
-          // customers yet." instead of surfacing the error — found by
-          // running the real query against the seeded schema. Fixed by
-          // checking .ok here instead of assuming success.
-          setError(customersBody.error ?? customersBody.message ?? `Server said: ${customersRes.status}`);
-          return;
-        }
-        setCustomers(customersBody.customers ?? []);
+        const [, overviewRes] = await Promise.all([loadCustomers(), fetch(`${API_URL}/dashboard/overview`, { headers })]);
 
         const overviewBody = await overviewRes.json().catch(() => ({}));
         if (!overviewRes.ok) {
@@ -70,6 +74,7 @@ function Shell() {
         setError("Couldn't reach the API. Is it deployed and is VITE_API_URL set correctly?");
       }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [getToken]);
 
   return (
@@ -115,7 +120,19 @@ function Shell() {
         )}
 
         {!error && customers !== null && kpis !== null && activeScreen === "customers" && selectedCustomerId === null && (
-          <CustomersScreen customers={customers} onSelect={setSelectedCustomerId} />
+          <CustomersScreen
+            customers={customers}
+            identity={identity}
+            onSelect={setSelectedCustomerId}
+            onCreated={async (id) => {
+              // Refresh the list (the new row belongs in it from now on)
+              // and jump straight into the record that was just created —
+              // there's nothing useful to look at on the list screen
+              // immediately after creating one entry.
+              await loadCustomers();
+              setSelectedCustomerId(id);
+            }}
+          />
         )}
 
         {!error && activeScreen === "customers" && selectedCustomerId !== null && (

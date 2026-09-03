@@ -68,7 +68,10 @@ const FUNDING_FIELDS: FieldDef[] = [
   { key: "ownContributionReceived", dbKey: "own_contribution_received", label: "Own contribution received", type: "number" },
 ];
 
-const STAGE_OPTIONS = [
+// Exported so NewCustomerModal.tsx's create form can offer the same
+// choices as this screen's edit form, rather than a second hardcoded copy
+// silently drifting out of sync with this one.
+export const STAGE_OPTIONS = [
   "Held", "Booked", "Funding decided", "Agreement executed", "Registered", "Under collection", "Possession", "Cancelled",
 ];
 const FUNDING_SOURCE_OPTIONS = ["BANK", "OWN FUNDS"];

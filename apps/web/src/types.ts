@@ -138,6 +138,11 @@ export type Milestone = {
 
 export type Bank = { id: string; name: string };
 
+// GET /builders — staff-only (see apps/api/src/index.ts): the builder
+// picker on NewCustomerModal.tsx for a staff user creating a customer, who
+// (unlike a builder_user) isn't implicitly scoped to just one builder.
+export type Builder = { id: string; name: string };
+
 export type CustomerDetailResponse = {
   customer: CustomerDetail;
   coApplicants: CoApplicant[];

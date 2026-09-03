@@ -82,6 +82,21 @@ app.get("/banks", { preHandler: requireAuth }, async () => {
   return { banks: result.rows };
 });
 
+// The "New customer" builder picker (apps/web/src/NewCustomerModal.tsx).
+// Staff-only: a builder_user is already implicitly scoped to their own one
+// builder (POST /customers below always uses identity.builderId for them,
+// never anything the client sends) and has no legitimate reason to see
+// every other builder's name — this would be a real cross-tenant leak for
+// them, unlike /banks above, which is genuinely shared reference data.
+app.get("/builders", { preHandler: requireAuth }, async (request, reply) => {
+  if (!pool) return { builders: [] };
+  if (request.identity!.kind !== "staff") {
+    return reply.code(403).send({ error: "Only staff can list builders." });
+  }
+  const result = await pool.query("select id, name from builders order by name");
+  return { builders: result.rows };
+});
+
 // The customer detail screen (apps/web/src/CustomerDetailScreen.tsx) — the
 // full record CustomersScreen's list view only shows a handful of columns
 // from, plus co-applicants, the payment ledger, and this customer's
@@ -266,6 +281,58 @@ app.patch("/customers/:id", { preHandler: requireAuth }, async (request, reply) 
     );
     if (result.rowCount === 0) return reply.code(404).send({ error: "Customer not found." });
     return { ok: true };
+  });
+});
+
+// The "New customer" form (apps/web/src/NewCustomerModal.tsx) — a
+// deliberately small subset of what a customer record can eventually hold.
+// Uses the exact same EDITABLE_CUSTOMER_FIELDS allowlist PATCH above does,
+// so a new customer can never be created with a field this app doesn't
+// already know how to display and edit.
+app.post("/customers", { preHandler: requireAuth }, async (request, reply) => {
+  if (!pool) return reply.code(503).send({ error: "No database connected." });
+  const body = (request.body ?? {}) as Record<string, unknown>;
+
+  if (typeof body.full_name !== "string" || body.full_name.trim() === "") {
+    return reply.code(400).send({ error: "Name is required." });
+  }
+
+  const fields: string[] = [];
+  const values: unknown[] = [];
+  for (const field of EDITABLE_CUSTOMER_FIELDS) {
+    if (!Object.prototype.hasOwnProperty.call(body, field)) continue;
+    let value = body[field];
+    if (value === "") value = null;
+    fields.push(field);
+    values.push(value);
+  }
+
+  return withTenantClient(request.identity!, async (client) => {
+    // A builder_user is always scoped to their own builder — identity.
+    // builderId, never anything the client sends, same reasoning as
+    // POST /customers/:id/payments below. Staff aren't scoped to any one
+    // builder at all, so they have to say which one explicitly (see
+    // GET /builders and NewCustomerModal.tsx's builder picker, shown only
+    // to staff); RLS's WITH CHECK still applies to this insert either way
+    // — a staff-created row is allowed for any builder_id (is_staff short-
+    // circuits the policy), a builder-created row only for their own.
+    let builderId: string;
+    if (request.identity!.kind === "builder") {
+      builderId = request.identity!.builderId;
+    } else {
+      if (typeof body.builder_id !== "string" || body.builder_id === "") {
+        return reply.code(400).send({ error: "builder_id is required for staff." });
+      }
+      builderId = body.builder_id;
+    }
+
+    const columns = ["builder_id", ...fields];
+    const placeholders = columns.map((_, i) => `$${i + 1}`);
+    const result = await client.query(
+      `insert into customers (${columns.join(", ")}) values (${placeholders.join(", ")}) returning id`,
+      [builderId, ...values]
+    );
+    return reply.code(201).send({ ok: true, id: result.rows[0].id });
   });
 });
 
