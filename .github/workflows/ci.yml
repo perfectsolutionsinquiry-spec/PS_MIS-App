@@ -48,7 +48,23 @@ jobs:
           --health-retries 10
 
     env:
-      DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+      # NOT postgres:postgres@.../postgres — that role is the Postgres image's
+      # default SUPERUSER, and superusers bypass row-level security
+      # unconditionally, FORCE ROW LEVEL SECURITY included (this is documented
+      # Postgres behaviour, not a bug: "row security is always disabled for
+      # superusers"). Production connects as Neon's neondb_owner, an ordinary
+      # (non-superuser) role that merely owns the tables — that non-superuser
+      # ownership is exactly why 0003_force_rls.sql's FORCE was needed at all.
+      # First real run of this workflow connected as the superuser by mistake
+      # and both isolation tests failed — not because the app's RLS was
+      # broken, but because the superuser connection made FORCE meaningless,
+      # so the suite was testing a more privileged role than production ever
+      # uses. DATABASE_URL below points at app_owner instead, a plain login
+      # role created in "Create a non-superuser owner role", so this
+      # environment's privilege level actually matches Neon's.
+      PGSUPERUSER_URL: postgres://postgres:postgres@localhost:5432/postgres
+      PGSUPERUSER_APPDB_URL: postgres://postgres:postgres@localhost:5432/appdb
+      DATABASE_URL: postgres://app_owner:app_owner_pw@localhost:5432/appdb
       CI: true
 
     steps:
@@ -69,13 +85,29 @@ jobs:
       - name: Build apps/web
         run: npm run build -w apps/web
 
-      # db/migrations files are numbered 0001, 0002, 0003... — a plain glob
-      # sort is already the correct apply order as long as that convention
-      # holds, so there is no separate list to keep in sync here.
-      - name: Apply migrations (0001, 0002, 0003, ...)
+      # app_owner is a plain login role, not a superuser, so it owns every
+      # table it creates but does not automatically bypass RLS the way the
+      # postgres superuser would — this is what makes the isolation suite
+      # below actually mean something. pgcrypto is pre-installed here as the
+      # superuser (0001_init.sql's own `create extension if not exists
+      # pgcrypto` would otherwise need extension-install privileges app_owner
+      # has no particular reason to have) so the migration step needs nothing
+      # beyond ordinary table-creation rights.
+      - name: Create a non-superuser owner role
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends postgresql-client
+          psql "$PGSUPERUSER_URL" -v ON_ERROR_STOP=1 -c "create role app_owner with login password 'app_owner_pw';"
+          psql "$PGSUPERUSER_URL" -v ON_ERROR_STOP=1 -c "create database appdb owner app_owner;"
+          psql "$PGSUPERUSER_APPDB_URL" -v ON_ERROR_STOP=1 -c "create extension if not exists pgcrypto;"
+
+      # db/migrations files are numbered 0001, 0002, 0003... — a plain glob
+      # sort is already the correct apply order as long as that convention
+      # holds, so there is no separate list to keep in sync here. Applied as
+      # app_owner (DATABASE_URL above), so app_owner owns every table these
+      # create — matching neondb_owner's role in production exactly.
+      - name: Apply migrations (0001, 0002, 0003, ...)
+        run: |
           for f in db/migrations/*.sql; do
             echo "-- applying $f"
             psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"
