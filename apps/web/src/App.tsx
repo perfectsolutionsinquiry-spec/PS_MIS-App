@@ -73,7 +73,10 @@ function Shell() {
   }, [getToken]);
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#f8fafc", fontFamily: "system-ui, sans-serif" }}>
+    // fontFamily inherits from body (apps/web/src/index.css) — IBM Plex
+    // Sans, Perfect Solutions' real brand font, not the system-ui default
+    // this used to hardcode here.
+    <div style={{ display: "flex", minHeight: "100vh", background: "#f8fafc" }}>
       <Sidebar
         active={activeScreen}
         onNavigate={(screen) => {

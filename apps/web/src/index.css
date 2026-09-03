@@ -1,0 +1,25 @@
+/* Perfect Solutions' real brand typefaces (loaded via Google Fonts in
+   index.html) — the only global CSS this app has. Every other style in
+   this app is inline, on purpose (see App.tsx's top-of-file note on
+   keeping business logic and presentation server-driven / component-local)
+   — but font loading and the base body font are inherently document-level
+   concerns that inline styles on individual components can't express, so
+   this one file is the exception.
+
+   Roles match the brochure these fonts were bought for
+   (PerfectSolutions_Brochure_Fonts/INSTALL_README.txt): IBM Plex Sans for
+   titles, section titles, labels and general UI chrome; IBM Plex Serif for
+   body copy and — the use this app leans on most — "fact-table values",
+   i.e. the actual figures (KPI tiles, summary tiles). Components that want
+   the serif treatment for a value opt in with `fontFamily: "var(--font-serif)"`;
+   everything else inherits the sans default from `body` below. */
+
+:root {
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  --font-serif: "IBM Plex Serif", Georgia, serif;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+}

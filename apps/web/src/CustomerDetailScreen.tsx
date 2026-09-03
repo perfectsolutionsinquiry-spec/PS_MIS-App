@@ -531,7 +531,17 @@ function SummaryTile({ label, value, good }: { label: string; value: string; goo
   return (
     <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, padding: "0.9rem 1.1rem" }}>
       <div style={{ color: "#64748b", fontSize: "0.75rem", fontWeight: 500 }}>{label}</div>
-      <div style={{ fontSize: "1.3rem", fontWeight: 700, color: good ? "#15803d" : "#0f172a", marginTop: "0.25rem" }}>{value}</div>
+      <div
+        style={{
+          fontFamily: "var(--font-serif)",
+          fontSize: "1.3rem",
+          fontWeight: 600,
+          color: good ? "#15803d" : "#0f172a",
+          marginTop: "0.25rem",
+        }}
+      >
+        {value}
+      </div>
     </div>
   );
 }
