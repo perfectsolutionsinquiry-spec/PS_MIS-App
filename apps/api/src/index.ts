@@ -49,8 +49,17 @@ app.get("/me", { preHandler: requireAuth }, async (request) => {
 app.get("/customers", { preHandler: requireAuth }, async (request) => {
   if (!pool) return { customers: [], note: "No database connected." };
   return withTenantClient(request.identity!, async (client) => {
+    // Note: the customers table's column is contact_number, not phone (see
+    // db/migrations/0001_init.sql) — aliased below so the API's response
+    // shape (and the frontend's Customer type) can stay as `phone` without
+    // the frontend needing to know the underlying column name. Caught by
+    // actually running this query against the real seeded schema locally —
+    // it had been referencing a column that never existed, unnoticed
+    // because the frontend didn't check /customers' response status (fixed
+    // in apps/web/src/App.tsx) and silently rendered "No customers yet."
+    // for what was actually a 500 error every time.
     const result = await client.query(
-      "select id, full_name, phone, email, stage, created_at from customers order by created_at desc limit 200"
+      "select id, full_name, contact_number as phone, email, stage, created_at from customers order by created_at desc limit 200"
     );
     return { customers: result.rows };
   });

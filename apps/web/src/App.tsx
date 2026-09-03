@@ -44,7 +44,15 @@ function Dashboard() {
         setIdentity(me.identity);
 
         const customersRes = await fetch(`${API_URL}/customers`, { headers });
-        const customersBody = await customersRes.json();
+        const customersBody = await customersRes.json().catch(() => ({}));
+        if (!customersRes.ok) {
+          // Previously ungated: a failed /customers call (e.g. a bad query
+          // on the server) silently rendered as "No customers yet." instead
+          // of surfacing the actual error — found by running the real
+          // query against the seeded schema and getting exactly that.
+          setError(customersBody.error ?? customersBody.message ?? `Server said: ${customersRes.status}`);
+          return;
+        }
         setCustomers(customersBody.customers ?? []);
       } catch {
         setError("Couldn't reach the API. Is it deployed and is VITE_API_URL set correctly?");

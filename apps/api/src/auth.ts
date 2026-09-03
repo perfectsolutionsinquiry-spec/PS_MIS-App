@@ -100,14 +100,35 @@ export async function withTenantClient<T>(
   if (!pool) throw new Error("No database connected.");
   const client = await pool.connect();
   try {
-    if (identity.kind === "staff") {
-      await client.query("select set_config('app.is_staff', 'true', true)");
-      await client.query("select set_config('app.current_builder_id', '', true)");
-    } else {
-      await client.query("select set_config('app.is_staff', '', true)");
-      await client.query("select set_config('app.current_builder_id', $1, true)", [identity.builderId]);
+    // set_config(..., true) means "local to the current transaction" — that
+    // third argument is deliberate: it's what lets us reset these safely
+    // just by ending the transaction, instead of having to remember to
+    // clear them before this pooled connection gets reused by some other
+    // request. But that only works if the set_config calls and the actual
+    // query in fn() run inside the SAME transaction — each bare
+    // client.query() call is its own auto-committed transaction by default,
+    // so without this explicit begin/commit, the "local" setting reverts
+    // before fn() ever runs and every query below sees no builder scope at
+    // all. Caught by running apps/api/tests/isolation.test.ts for real
+    // against a local Postgres — before this fix, is_staff and
+    // current_builder_id were both back to unset by the time the real
+    // query ran, for every identity, every time.
+    await client.query("begin");
+    try {
+      if (identity.kind === "staff") {
+        await client.query("select set_config('app.is_staff', 'true', true)");
+        await client.query("select set_config('app.current_builder_id', '', true)");
+      } else {
+        await client.query("select set_config('app.is_staff', '', true)");
+        await client.query("select set_config('app.current_builder_id', $1, true)", [identity.builderId]);
+      }
+      const result = await fn(client);
+      await client.query("commit");
+      return result;
+    } catch (err) {
+      await client.query("rollback").catch(() => {});
+      throw err;
     }
-    return await fn(client);
   } finally {
     client.release();
   }
