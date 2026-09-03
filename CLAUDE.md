@@ -20,9 +20,13 @@ the four business lines), `docs/LAUNCH_GUARDRAILS.md` (the pre-launch
 checklist this repo is currently working through — start here for "is it
 safe to sign builder #2 yet"), `docs/BUILDER_ONBOARDING.md` (the exact
 runbook — no admin UI exists yet, so this procedure *is* the safety net), and
-`docs/SUPPORT_ACCESS_COMMITMENT.md` (draft-only, needs a lawyer — what staff
-cross-builder access is and isn't, said honestly about what's actually
-enforced today versus just committed to).
+`docs/BUILDER_AGREEMENT_DRAFT.md` (draft-only, needs a lawyer, do not send to
+a builder as-is — the full per-builder agreement guardrail #10 calls for:
+staff access, data ownership, export rights, support/SLA stance, DPDP Act
+exposure, termination; grounded in the actual code and business terms, not a
+generic template). `docs/SUPPORT_ACCESS_COMMITMENT.md` covers the same staff-
+access ground as that draft's Section 5 alone, kept separately since
+guardrail #5 is tracked as its own checklist item.
 
 **Hard rule that shaped every design decision below:** business logic and
 access control live on the server, never the client. The frontend
@@ -170,8 +174,11 @@ don't assume a save took effect.
   16. `4a649c2` — Clerk switched to production keys and a custom domain
       (`app.perfectfinadvisory.com`), Shilpkaar's builder login created for
       the first time (see "Real data loaded" below), guardrail #3 done
-  17. this file — guardrail #4 done: Neon point-in-time restore actually
+  17. `d68b050` — guardrail #4 done: Neon point-in-time restore actually
       rehearsed, not just confirmed enabled
+  18. this file — detailed builder-agreement draft (guardrail #10 / #5),
+      grounded in the actual code and business terms rather than a generic
+      template, for a lawyer to work from
 
 ## Database schema (13 tables, migrations 0001-0003)
 
@@ -356,8 +363,9 @@ someone's logged in, especially if a tile looks off.
   Actions runs after a push is already received. That needs branch
   protection with "require status checks" turned on in the repo's GitHub
   settings, a manual toggle for whoever has admin on the repo.
-- `docs/SUPPORT_ACCESS_COMMITMENT.md` is a draft — needs a lawyer before it
-  goes into anything a builder actually signs.
+- `docs/BUILDER_AGREEMENT_DRAFT.md` (and `docs/SUPPORT_ACCESS_COMMITMENT.md`,
+  its Section 5) are drafts — need a lawyer before anything a builder
+  actually signs. Guardrail #5, the last one on the pre-launch list.
 
 ## Working style notes (for whoever picks this up next)
 

@@ -1,5 +1,12 @@
 # Support-Access Commitment — Draft
 
+> **Superseded by the fuller draft, 4 September 2026:** this content now lives as
+> Section 5 of `docs/BUILDER_AGREEMENT_DRAFT.md`, guardrail #10's full per-builder
+> agreement draft, requested to give a lawyer more than just this one clause to work
+> from. Kept here too since guardrail #5 is tracked as its own checklist item — but treat
+> `BUILDER_AGREEMENT_DRAFT.md` as the one to actually hand a lawyer; update both if this
+> clause's substance changes, or fold this file into that one once a lawyer is engaged.
+
 Guardrail #5 from `docs/LAUNCH_GUARDRAILS.md`: *"Decide and write down the support-access
 rule, then hold to it... the exact language already drafted in the platform plan."*
 

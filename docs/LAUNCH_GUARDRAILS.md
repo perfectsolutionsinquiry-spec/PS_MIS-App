@@ -20,9 +20,13 @@
 > not an empty shell. One real constraint this surfaced: Neon's free plan retains only
 > **6 hours** of point-in-time history — a problem caught more than 6 hours after it
 > happened cannot be recovered this way, worth knowing before treating PITR as a safety
-> net for anything older than that. Item 5 is what's left before builder #2 — tracked in
-> `docs/SUPPORT_ACCESS_COMMITMENT.md` so this document can stay the original decision
-> record rather than being edited into a live checklist.
+> net for anything older than that. Item 5 is what's left before builder #2 — a fuller
+> draft than just the support-access clause now exists at
+> `docs/BUILDER_AGREEMENT_DRAFT.md` (guardrail #10's full agreement scope, requested to
+> give a lawyer more to start from), with `docs/SUPPORT_ACCESS_COMMITMENT.md` covering
+> the same ground as that draft's Section 5 alone. Both need a lawyer before either goes
+> near a builder. This document stays the original decision record rather than being
+> edited into a live checklist.
 
 Written 3 September 2026, in response to: "10 builders might log in — what are the
 standard things we discussed before launching this app." This is the decision record for
