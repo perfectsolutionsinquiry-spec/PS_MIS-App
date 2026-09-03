@@ -179,8 +179,16 @@ don't assume a save took effect.
   18. `d9c111f` — detailed builder-agreement draft (guardrail #10 / #5),
       grounded in the actual code and business terms rather than a generic
       template, for a lawyer to work from
-  19. this file — the last two Overview chart cards: outstanding balance by
+  19. `00a4ff1` — the last two Overview chart cards: outstanding balance by
       customer and daily collection, `LineChart.tsx` new
+  20. `a36a908` — donut: exploded-slice hover, tooltip anchored to the
+      hovered segment
+  21. `5e73248` — donut: 4 real categories instead of 3 (violet as slot 4,
+      not the documented yellow — see DonutChart.tsx)
+  22. `8315ed8` — finish outstanding-by-customer (searchable picker, no
+      top-N cap) and daily collection (4/12/26/52-week range picker); real
+      "View as table" for both
+  23. this file — catches up this list and the Overview screen description
 
 ## Database schema (13 tables, migrations 0001-0003)
 
@@ -311,14 +319,28 @@ first (cheap, real SQL, no new dependency), the chart cards next.
   received, balance outstanding, loan amount sanctioned, collection
   efficiency, units tracked) plus all four "Collection & loan pipeline"
   chart cards, all from `/dashboard/overview`: disbursement split
-  (`DonutChart.tsx`), loan by bank and outstanding by customer (both
-  `BarChart.tsx`, reused — a ranked single-hue bar chart is the same form
-  either way), and daily collection, grouped by week (`LineChart.tsx`, with
-  a hover crosshair — the one chart here with too many points to
-  direct-label every one). All hand-rolled SVG, colors validated against
-  the dataviz skill's checks, no charting library — deliberately, since a
-  dependency that can't be typechecked or installed locally (no Node on
-  this machine) is real risk to add blind.
+  (`DonutChart.tsx`, 3 real categories + violet as a 4th — see that file's
+  own comment for why violet and not the documented yellow slot, and for
+  its exploded-slice hover + anchored tooltip), loan by bank and
+  outstanding by customer (both `BarChart.tsx`, reused — a ranked
+  single-hue bar chart is the same form either way), and daily collection,
+  grouped by week (`LineChart.tsx`, with a hover crosshair — the one chart
+  here with too many points to direct-label every one). All hand-rolled
+  SVG, colors validated against the dataviz skill's checks, no charting
+  library — deliberately, since a dependency that can't be typechecked or
+  installed locally (no Node on this machine) is real risk to add blind.
+
+  Outstanding-by-customer and daily collection are the two cards with real
+  interactivity, matched against `archive/html-tool`'s actual source
+  (`src/charts.js`) rather than guessed at: a searchable `<select>` picker
+  over every outstanding customer (not a top-N chart — the cap that used to
+  be there is gone, `limit 500` in the query is a safety ceiling only,
+  same stopgap pattern as `/customers`' `limit 1000`), and a 4/12/26/52-week
+  range picker on daily collection backed by a second endpoint,
+  `GET /dashboard/daily-collection?weeks=N`, called only when the range
+  changes so switching it doesn't re-run the KPI/donut/bank-bar queries.
+  Both have a real "View as table" now (`ChartCard`'s `table` prop) — the
+  other two cards keep the disabled "soon" version.
 - `PageHeader.tsx` — shared all-caps title + icon-button row (email/export),
   used by Overview and Customers so they read as one app. The icon buttons
   are visibly present but disabled, same "soon" treatment as an unbuilt nav
