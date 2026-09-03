@@ -198,9 +198,16 @@ app.get("/dashboard/overview", { preHandler: requireAuth }, async (request) => {
 
     // Outstanding balance by customer (the second bar chart). Same "amount
     // due" definition as the KPI tiles above — due/partial/paid milestones
-    // only — minus what's actually been received, per customer. Capped at
-    // the top 10 by balance and filtered to > 0: a customer who is paid up
-    // or ahead isn't "outstanding," and 288 bars would not be a chart.
+    // only — minus what's actually been received, per customer, filtered
+    // to > 0: a customer who is paid up or ahead isn't "outstanding."
+    //
+    // No top-N cap here, unlike the donut/bank-bar above — the real old
+    // tool (archive/html-tool, src/charts.js renderBalanceChart) shows
+    // every outstanding customer in a scrolling list with a searchable
+    // picker to jump to one, not a top-10 chart, and apps/web/src/
+    // OverviewScreen.tsx reproduces that. limit 500 is the same kind of
+    // stopgap as /customers' limit 1000 — a safety ceiling, not real
+    // pagination, fine at current builder sizes.
     const outstandingResult = await client.query(`
       with due_per_customer as (
         select customer_id, coalesce(sum(amount_due), 0)::numeric as amount_due
@@ -220,7 +227,7 @@ app.get("/dashboard/overview", { preHandler: requireAuth }, async (request) => {
       left join received_per_customer r on r.customer_id = c.id
       where (coalesce(d.amount_due, 0) - coalesce(r.received, 0)) > 0
       order by balance desc
-      limit 10
+      limit 500
     `);
 
     // Daily collection, bucketed by week (the line chart). Built from a
@@ -291,6 +298,66 @@ app.get("/dashboard/overview", { preHandler: requireAuth }, async (request) => {
           amount: num(r.amount),
         })),
       },
+    };
+  });
+});
+
+// Daily collection's range picker (apps/web/src/OverviewScreen.tsx). The
+// main /dashboard/overview above always returns a fixed 12-week window —
+// fast, one round trip, right for the initial page load. This is the
+// separate call OverviewScreen makes only when the range selector actually
+// changes, so switching ranges doesn't re-run the KPI/donut/bank-bar
+// queries just to redraw one chart.
+//
+// Deliberately NOT porting archive/html-tool's day -> week -> month
+// auto-widening bucket grain, or its "anchor to the latest receipt instead
+// of today" fix. Both existed there because the old tool read a workbook
+// that could be uploaded once and left stale for months; this app queries
+// the live database on every request, so "today" is already the correct
+// anchor, and a line chart (unlike that tool's per-day bars, which needed
+// real pixel width per bar to stay legible/clickable) tolerates more points
+// at a fixed width via sparser axis labels instead of needing a wider grain.
+const ALLOWED_DAILY_WEEKS = [4, 12, 26, 52];
+
+app.get("/dashboard/daily-collection", { preHandler: requireAuth }, async (request) => {
+  if (!pool) return { dailyCollection: [] };
+  const query = request.query as { weeks?: string };
+  const weeks = ALLOWED_DAILY_WEEKS.includes(Number(query.weeks)) ? Number(query.weeks) : 12;
+  // Never interpolates `weeks` into the SQL string — only ever one of the
+  // four whitelisted values above reaches here, then goes in as a bound
+  // parameter regardless.
+  const daysBack = (weeks - 1) * 7;
+
+  return withTenantClient(request.identity!, async (client) => {
+    const dailyResult = await client.query(
+      `
+      with weeks as (
+        select generate_series(
+          date_trunc('week', current_date - $1::int * interval '1 day')::date,
+          date_trunc('week', current_date)::date,
+          interval '7 days'
+        )::date as week_start
+      ),
+      collected as (
+        select date_trunc('week', received_on)::date as week_start,
+               sum(flat_cost_received + gst_received)::numeric as amount
+        from recovery_transactions
+        group by 1
+      )
+      select w.week_start, coalesce(c.amount, 0) as amount
+      from weeks w
+      left join collected c on c.week_start = w.week_start
+      order by w.week_start
+      `,
+      [daysBack]
+    );
+
+    const num = (v: unknown) => (v === null || v === undefined ? 0 : Number(v));
+    return {
+      dailyCollection: dailyResult.rows.map((r) => ({
+        weekStart: (r.week_start as Date).toISOString().slice(0, 10),
+        amount: num(r.amount),
+      })),
     };
   });
 });

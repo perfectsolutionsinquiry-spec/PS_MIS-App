@@ -9,9 +9,15 @@ export type BarRow = { label: string; value: number };
 // thick, rounded only at the data end, square at the baseline, value at
 // the tip — see marks-and-anatomy.md.
 export default function BarChart({
-  bars, formatValue, color = "#2563eb",
+  bars, formatValue, color = "#2563eb", maxHeight,
 }: {
   bars: BarRow[]; formatValue: (v: number) => string; color?: string;
+  // Set for a list that can run long (outstanding-by-customer: every
+  // outstanding customer, not a top-N — could be hundreds on a real
+  // builder) so it scrolls inside the card instead of stretching it.
+  // Unset for a short, fixed-length list (loan-by-bank) where every bar
+  // should just be visible at once.
+  maxHeight?: number;
 }) {
   const [active, setActive] = useState<number | null>(null);
 
@@ -22,7 +28,7 @@ export default function BarChart({
   const max = Math.max(...bars.map((b) => b.value), 1);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "0.7rem" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.7rem", maxHeight, overflowY: maxHeight ? "auto" : undefined, paddingRight: maxHeight ? "0.4rem" : undefined }}>
       {bars.map((b, i) => {
         const isActive = active === i;
         return (
