@@ -90,7 +90,7 @@ app.get("/customers", { preHandler: requireAuth }, async (request) => {
 // everything across every builder" in CLAUDE.md; a per-builder filter for
 // staff is a later addition, not this one.
 app.get("/dashboard/overview", { preHandler: requireAuth }, async (request) => {
-  if (!pool) return { kpis: null, note: "No database connected." };
+  if (!pool) return { kpis: null, pipeline: null, note: "No database connected." };
   return withTenantClient(request.identity!, async (client) => {
     const result = await client.query(`
       with due_milestones as (
@@ -130,6 +130,66 @@ app.get("/dashboard/overview", { preHandler: requireAuth }, async (request) => {
       from cust, received, due_milestones
     `);
 
+    // Disbursement status split (the donut). dl_status is free text a
+    // builder's ops team enters, so its distinct values aren't a fixed enum
+    // we control — capped at the top 3 by count, the rest folded into
+    // "Other", computed here rather than trusting the client to cap a list
+    // that could otherwise run long. See apps/web/src/DonutChart.tsx for why
+    // 3: a donut's segments are all mutual neighbors (the first also
+    // touches the last), and 3 is the validated categorical palette's
+    // documented safe count for that "all-pairs" case — see
+    // references/palette.md in the dataviz skill.
+    const splitResult = await client.query(`
+      with status_counts as (
+        select coalesce(nullif(trim(dl_status), ''), 'Not set') as status, count(*)::int as cnt
+        from customers
+        group by 1
+      ),
+      ranked as (
+        select status, cnt, row_number() over (order by cnt desc, status) as rn
+        from status_counts
+      ),
+      bucketed as (
+        select (case when rn <= 3 then status else 'Other' end) as status, cnt
+        from ranked
+      ),
+      grouped as (
+        select status, sum(cnt)::int as count
+        from bucketed
+        group by status
+      )
+      select status, count,
+        round(count::numeric / nullif(sum(count) over (), 0) * 100, 1) as pct
+      from grouped
+      order by (status = 'Other'), count desc
+    `);
+
+    // Loan amount by bank (the bar chart). Capped at the top 8 banks by
+    // sanctioned amount, same reasoning as above — a real builder can have
+    // more financing banks than fit legibly in one chart (Shilpkaar alone
+    // has 12).
+    const bankResult = await client.query(`
+      with bank_totals as (
+        select b.name as bank, sum(c.loan_amount)::numeric as amount
+        from customers c
+        join banks b on b.id = c.bank_id
+        where c.loan_amount is not null and c.loan_amount > 0
+        group by b.name
+      ),
+      ranked as (
+        select bank, amount, row_number() over (order by amount desc) as rn
+        from bank_totals
+      ),
+      bucketed as (
+        select (case when rn <= 8 then bank else 'Other' end) as bank, amount
+        from ranked
+      )
+      select bank, sum(amount)::numeric as amount
+      from bucketed
+      group by bank
+      order by (bank = 'Other'), amount desc
+    `);
+
     // pg returns `numeric` columns as strings, not JS numbers, so every
     // figure is parsed here — once, in the one place responsible for it —
     // rather than leaving each caller to remember to do it.
@@ -149,6 +209,17 @@ app.get("/dashboard/overview", { preHandler: requireAuth }, async (request) => {
         loanAmountSanctioned: num(row.loan_amount_sanctioned),
         loanCases: num(row.loan_cases),
         collectionEfficiencyPct: pctOrNull(row.collection_efficiency_pct),
+      },
+      pipeline: {
+        disbursementSplit: splitResult.rows.map((r) => ({
+          status: String(r.status),
+          count: num(r.count),
+          pct: num(r.pct),
+        })),
+        loanByBank: bankResult.rows.map((r) => ({
+          bank: String(r.bank),
+          amount: num(r.amount),
+        })),
       },
     };
   });

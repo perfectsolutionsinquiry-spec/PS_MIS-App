@@ -31,3 +31,13 @@ export type DashboardKpis = {
   loanCases: number;
   collectionEfficiencyPct: number | null;
 };
+
+// The "Collection & loan pipeline" chart cards. Both arrays are already
+// capped and bucketed server-side (top N + "Other") — the frontend renders
+// exactly what arrives, it doesn't decide how many categories to show.
+export type DisbursementSplitRow = { status: string; count: number; pct: number };
+export type LoanByBankRow = { bank: string; amount: number };
+export type PipelineData = {
+  disbursementSplit: DisbursementSplitRow[];
+  loanByBank: LoanByBankRow[];
+};

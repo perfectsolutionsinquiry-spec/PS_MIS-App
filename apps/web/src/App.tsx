@@ -3,7 +3,7 @@ import { SignedIn, SignedOut, SignIn, useAuth } from "@clerk/clerk-react";
 import Sidebar from "./Sidebar";
 import CustomersScreen from "./CustomersScreen";
 import OverviewScreen from "./OverviewScreen";
-import type { Customer, DashboardKpis, Identity } from "./types";
+import type { Customer, DashboardKpis, Identity, PipelineData } from "./types";
 
 // This app only ever displays what the API sends back. It never decides who
 // can see what, and never computes a number itself — see
@@ -20,6 +20,7 @@ function Shell() {
   const [identity, setIdentity] = useState<Identity | null>(null);
   const [customers, setCustomers] = useState<Customer[] | null>(null);
   const [kpis, setKpis] = useState<DashboardKpis | null>(null);
+  const [pipeline, setPipeline] = useState<PipelineData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeScreen, setActiveScreen] = useState("overview");
 
@@ -62,6 +63,7 @@ function Shell() {
           return;
         }
         setKpis(overviewBody.kpis ?? null);
+        setPipeline(overviewBody.pipeline ?? null);
       } catch {
         setError("Couldn't reach the API. Is it deployed and is VITE_API_URL set correctly?");
       }
@@ -89,12 +91,12 @@ function Shell() {
           </div>
         )}
 
-        {!error && (customers === null || kpis === null) && (
+        {!error && (customers === null || kpis === null || pipeline === null) && (
           <p style={{ color: "#64748b", fontSize: "0.9rem" }}>Loading…</p>
         )}
 
-        {!error && customers !== null && kpis !== null && activeScreen === "overview" && (
-          <OverviewScreen kpis={kpis} />
+        {!error && customers !== null && kpis !== null && pipeline !== null && activeScreen === "overview" && (
+          <OverviewScreen kpis={kpis} pipeline={pipeline} />
         )}
 
         {!error && customers !== null && kpis !== null && activeScreen === "customers" && (

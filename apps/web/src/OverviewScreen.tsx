@@ -1,6 +1,55 @@
-import type { DashboardKpis } from "./types";
+import type { ReactNode } from "react";
+import type { DashboardKpis, PipelineData } from "./types";
 import { formatCompactInr, formatPct } from "./format";
 import PageHeader from "./PageHeader";
+import DonutChart, { type DonutSegment } from "./DonutChart";
+import BarChart from "./BarChart";
+
+// Categorical slots 1–3 of the dataviz skill's validated default palette,
+// plus a neutral gray for the server-computed "Other" bucket — see
+// DonutChart.tsx for how this was actually validated (not eyeballed)
+// against this app's real white card surface.
+const CATEGORICAL = ["#2a78d6", "#eb6834", "#1baf7a"];
+const OTHER_COLOR = "#94a3b8";
+
+function ChartCard({
+  title, subtitle, children,
+}: {
+  title: string; subtitle: string; children: ReactNode;
+}) {
+  return (
+    <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, padding: "1.25rem" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.75rem", marginBottom: "1.1rem" }}>
+        <div>
+          <div style={{ fontWeight: 700, fontSize: "0.92rem", color: "#0f172a" }}>{title}</div>
+          <div style={{ fontSize: "0.76rem", color: "#94a3b8", marginTop: "0.15rem" }}>{subtitle}</div>
+        </div>
+        {/* Same "soon" treatment as an unbuilt nav item or PageHeader's
+            icons — visibly present, disabled, not a fake action. */}
+        <button
+          type="button"
+          disabled
+          title="View as table — coming soon"
+          style={{
+            fontSize: "0.72rem",
+            fontWeight: 600,
+            color: "#94a3b8",
+            background: "white",
+            border: "1px solid #e2e8f0",
+            borderRadius: 6,
+            padding: "0.3rem 0.6rem",
+            cursor: "default",
+            whiteSpace: "nowrap",
+            flexShrink: 0,
+          }}
+        >
+          View as table
+        </button>
+      </div>
+      {children}
+    </div>
+  );
+}
 
 function KpiTile({
   label, value, sub, good,
@@ -33,7 +82,22 @@ function KpiTile({
 // by bank, outstanding by customer, daily collection) aren't built yet;
 // this screen proves the real figures render correctly before charts are
 // added on top of them.
-export default function OverviewScreen({ kpis }: { kpis: DashboardKpis }) {
+export default function OverviewScreen({ kpis, pipeline }: { kpis: DashboardKpis; pipeline: PipelineData }) {
+  // The API orders disbursementSplit as: up to 3 real statuses by count
+  // desc, then "Other" last if present (see apps/api/src/index.ts). Slot
+  // assignment follows that same order — only non-"Other" rows consume a
+  // categorical color, so "Other" always gets the gray regardless of where
+  // it lands.
+  let nextSlot = 0;
+  const donutSegments: DonutSegment[] = pipeline.disbursementSplit.map((row) => ({
+    label: row.status,
+    count: row.count,
+    pct: row.pct,
+    color: row.status === "Other" ? OTHER_COLOR : (CATEGORICAL[nextSlot++] ?? OTHER_COLOR),
+  }));
+
+  const bankBars = pipeline.loanByBank.map((row) => ({ label: row.bank, value: row.amount }));
+
   return (
     <div>
       <PageHeader title="Portfolio overview" />
@@ -89,16 +153,34 @@ export default function OverviewScreen({ kpis }: { kpis: DashboardKpis }) {
       </h2>
       <div
         style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          gap: "1rem",
+          marginBottom: "1rem",
+        }}
+      >
+        <ChartCard title="Disbursement status split" subtitle="Customers by loan disbursement status">
+          <DonutChart segments={donutSegments} centerValue={String(kpis.unitsTracked)} centerLabel="customers" />
+        </ChartCard>
+        <ChartCard title="Loan amount by bank" subtitle="Total sanctioned loan value per financing bank">
+          <BarChart bars={bankBars} formatValue={formatCompactInr} />
+        </ChartCard>
+      </div>
+
+      {/* Outstanding by customer and daily collection — the other two cards
+          from the reference screenshot — aren't built yet. */}
+      <div
+        style={{
           background: "white",
           border: "1px dashed #e2e8f0",
           borderRadius: 12,
-          padding: "3rem 1rem",
+          padding: "1.75rem 1rem",
           textAlign: "center",
           color: "#94a3b8",
           fontSize: "0.85rem",
         }}
       >
-        Disbursement split, loan by bank, outstanding by customer and daily collection charts are next.
+        Outstanding balance by customer and daily collection charts are next.
       </div>
     </div>
   );
