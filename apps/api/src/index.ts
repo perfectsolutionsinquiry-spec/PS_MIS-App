@@ -58,8 +58,14 @@ app.get("/customers", { preHandler: requireAuth }, async (request) => {
     // because the frontend didn't check /customers' response status (fixed
     // in apps/web/src/App.tsx) and silently rendered "No customers yet."
     // for what was actually a 500 error every time.
+    // limit 1000 is a stopgap, not real pagination — fine while the
+    // biggest builder has ~300 customers, but this needs proper
+    // page/cursor params before that stops being true. Was capped at 200,
+    // which silently hid 88 of Shilpkaar's 288 real customers once seed
+    // data was loaded — caught by comparing the on-screen count to the row
+    // count confirmed in Neon.
     const result = await client.query(
-      "select id, full_name, contact_number as phone, email, stage, created_at from customers order by created_at desc limit 200"
+      "select id, full_name, contact_number as phone, email, stage, created_at from customers order by created_at desc limit 1000"
     );
     return { customers: result.rows };
   });

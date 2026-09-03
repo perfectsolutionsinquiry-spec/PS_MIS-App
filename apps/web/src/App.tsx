@@ -1,32 +1,25 @@
 import { useEffect, useState } from "react";
-import { SignedIn, SignedOut, SignIn, useAuth, UserButton } from "@clerk/clerk-react";
+import { SignedIn, SignedOut, SignIn, useAuth } from "@clerk/clerk-react";
+import Sidebar from "./Sidebar";
+import CustomersScreen from "./CustomersScreen";
+import type { Customer, Identity } from "./types";
 
 // This app only ever displays what the API sends back. It never decides who
 // can see what, and never computes a number itself — see
 // claude/Platform Plan - Architecture Options and Costs.md and the "keep
 // business logic on the server" rule from conversation. The API
-// (apps/api/src/index.ts) is the only place that check happens.
+// (apps/api/src/index.ts) is the only place that check happens. Adding the
+// sidebar/screens below is purely presentational — it doesn't change what
+// data is fetched or how it's authorized.
 
 const API_URL = import.meta.env.VITE_API_URL as string;
 
-type Identity =
-  | { kind: "staff"; staffId: string; fullName: string | null; role: string }
-  | { kind: "builder"; builderUserId: string; builderId: string; fullName: string | null; role: string };
-
-type Customer = {
-  id: string;
-  full_name: string;
-  phone: string | null;
-  email: string | null;
-  stage: string | null;
-  created_at: string;
-};
-
-function Dashboard() {
+function Shell() {
   const { getToken } = useAuth();
   const [identity, setIdentity] = useState<Identity | null>(null);
   const [customers, setCustomers] = useState<Customer[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [activeScreen, setActiveScreen] = useState("customers");
 
   useEffect(() => {
     (async () => {
@@ -46,10 +39,10 @@ function Dashboard() {
         const customersRes = await fetch(`${API_URL}/customers`, { headers });
         const customersBody = await customersRes.json().catch(() => ({}));
         if (!customersRes.ok) {
-          // Previously ungated: a failed /customers call (e.g. a bad query
-          // on the server) silently rendered as "No customers yet." instead
-          // of surfacing the actual error — found by running the real
-          // query against the seeded schema and getting exactly that.
+          // A failed /customers call used to silently render as "No
+          // customers yet." instead of surfacing the error — found by
+          // running the real query against the seeded schema. Fixed by
+          // checking .ok here instead of assuming success.
           setError(customersBody.error ?? customersBody.message ?? `Server said: ${customersRes.status}`);
           return;
         }
@@ -61,46 +54,34 @@ function Dashboard() {
   }, [getToken]);
 
   return (
-    <div style={{ fontFamily: "sans-serif", maxWidth: 720, margin: "2rem auto", padding: "0 1rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1 style={{ fontSize: "1.25rem" }}>Perfect Solutions</h1>
-        <UserButton />
-      </div>
+    <div style={{ display: "flex", minHeight: "100vh", background: "#f8fafc", fontFamily: "system-ui, sans-serif" }}>
+      <Sidebar active={activeScreen} onNavigate={setActiveScreen} identity={identity} />
 
-      {error && (
-        <p style={{ color: "#b91c1c", background: "#fef2f2", padding: "0.75rem", borderRadius: 6 }}>{error}</p>
-      )}
+      <main style={{ flex: 1, padding: "2rem 2.5rem", minWidth: 0 }}>
+        {error && (
+          <div
+            style={{
+              color: "#b91c1c",
+              background: "#fef2f2",
+              border: "1px solid #fecaca",
+              padding: "0.75rem 1rem",
+              borderRadius: 8,
+              marginBottom: "1.25rem",
+              fontSize: "0.85rem",
+            }}
+          >
+            {error}
+          </div>
+        )}
 
-      {identity && (
-        <p style={{ color: "#555" }}>
-          Signed in as <strong>{identity.fullName ?? "(no name set)"}</strong> —{" "}
-          {identity.kind === "staff" ? "Perfect Solutions staff (sees every builder)" : `builder account, role: ${identity.role}`}
-        </p>
-      )}
+        {!error && customers === null && (
+          <p style={{ color: "#64748b", fontSize: "0.9rem" }}>Loading…</p>
+        )}
 
-      <h2 style={{ fontSize: "1rem", marginTop: "2rem" }}>Customers</h2>
-      {customers === null && !error && <p>Loading…</p>}
-      {customers?.length === 0 && <p style={{ color: "#777" }}>No customers yet.</p>}
-      {customers && customers.length > 0 && (
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ textAlign: "left", borderBottom: "1px solid #ddd" }}>
-              <th>Name</th>
-              <th>Phone</th>
-              <th>Stage</th>
-            </tr>
-          </thead>
-          <tbody>
-            {customers.map((c) => (
-              <tr key={c.id} style={{ borderBottom: "1px solid #eee" }}>
-                <td>{c.full_name}</td>
-                <td>{c.phone ?? "—"}</td>
-                <td>{c.stage ?? "—"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+        {!error && customers !== null && activeScreen === "customers" && (
+          <CustomersScreen customers={customers} />
+        )}
+      </main>
     </div>
   );
 }
@@ -114,7 +95,7 @@ export default function App() {
         </div>
       </SignedOut>
       <SignedIn>
-        <Dashboard />
+        <Shell />
       </SignedIn>
     </>
   );
