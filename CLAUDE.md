@@ -28,6 +28,15 @@ generic template). `docs/SUPPORT_ACCESS_COMMITMENT.md` covers the same staff-
 access ground as that draft's Section 5 alone, kept separately since
 guardrail #5 is tracked as its own checklist item.
 
+**Read these before changing anything, and update them in the same
+commit as whatever prompted the change:** `docs/TECHNICAL_DOCUMENTATION.md`
+(schema map, data-flow diagrams, and a file-by-file/route-by-route index —
+"which file do I look at when X breaks") and `docs/FUNCTIONAL_GUIDE.md`
+(the same platform explained screen-by-screen in plain business language,
+for a non-technical reader — what a button does, what a number means,
+which settings are configurable and where). See "Documentation practice"
+below for the standing rule these two exist to enforce.
+
 **Hard rule that shaped every design decision below:** business logic and
 access control live on the server, never the client. The frontend
 (`apps/web`) only ever displays what the API sends it — it never computes a
@@ -188,7 +197,23 @@ don't assume a save took effect.
   22. `8315ed8` — finish outstanding-by-customer (searchable picker, no
       top-N cap) and daily collection (4/12/26/52-week range picker); real
       "View as table" for both
-  23. this file — catches up this list and the Overview screen description
+  23. `d35ab3d` — catches up this list and the Overview screen description
+  24. `d6e9d29` — the first real CRUD slice: a per-customer detail page
+      (full record view/edit + record-a-payment), `CustomerDetailScreen.tsx`
+      new, 4 new API routes
+  25. `8144fed` — real Perfect Solutions branding (logo mark + wordmark)
+      replacing the placeholder "PS" box and system favicon
+  26. `f01cfa9` then `f31f40f` — adopted the real brand fonts (IBM Plex
+      Sans/Serif), then reverted figures from Serif to Sans on explicit
+      feedback — Sans is the only brand font actually in use anywhere now
+  27. `bed0be3` — `DataTable.tsx`: a generic sortable/searchable/column-
+      configurable list engine, Customers wired up to it first; a working
+      "New customer" flow (`NewCustomerModal.tsx`, `POST /customers`,
+      `GET /builders`)
+  28. this file, plus `docs/TECHNICAL_DOCUMENTATION.md` and
+      `docs/FUNCTIONAL_GUIDE.md` (new) — establishes the standing
+      documentation practice (see that section above) and catches up
+      this list
 
 ## Database schema (13 tables, migrations 0001-0003)
 
@@ -374,9 +399,18 @@ someone's logged in, especially if a tile looks off.
 
 - No admin UI for provisioning `staff_users`/`builder_users` — still
   manual SQL via Neon's SQL Editor.
-- Fuller CRUD screens beyond the read-only customer list: add/edit
-  customer, projects, towers, inventory, payment milestones, recovery
-  transactions, co-applicants.
+- Customers has real CRUD now (list, create, view/edit full record,
+  record a payment — see `docs/TECHNICAL_DOCUMENTATION.md` §4-5). Every
+  other table — projects, towers, inventory, banks, bank accounts,
+  payment milestones — still has no screen at all, list or otherwise.
+  Editing co-applicants and deleting a customer (soft delete, an
+  `is_active`/archived-style field — explicit decision, not built yet)
+  are the two known gaps on the Customers side specifically.
+- The ServiceNow-style record view this was heading toward (a record
+  opens in its own tab alongside the list, configurable "highlight
+  fields," Overview/Details/Related-records tabs per record) — the list
+  side of this shipped as `DataTable.tsx`; the record-view redesign is
+  the deliberately-deferred next increment.
 - `packages/calc-engine` — porting the verified calculation logic (basic
   value, agreement value, GST/stamp-duty breakdowns) from the existing MIS
   HTML tool.
@@ -389,6 +423,39 @@ someone's logged in, especially if a tile looks off.
 - `docs/BUILDER_AGREEMENT_DRAFT.md` (and `docs/SUPPORT_ACCESS_COMMITMENT.md`,
   its Section 5) are drafts — need a lawyer before anything a builder
   actually signs. Guardrail #5, the last one on the pre-launch list.
+
+## Documentation practice
+
+Two living reference docs exist alongside this narrative one, and **every
+change — however small — updates the relevant one in the same commit**:
+
+- `docs/TECHNICAL_DOCUMENTATION.md` — schema map, data-flow diagrams
+  (Mermaid, so they render on GitHub and stay diffable as plain text —
+  not images, not a Word file), an API route table, and a frontend
+  file-by-file index. The answer to "which file do I look at when this
+  breaks."
+- `docs/FUNCTIONAL_GUIDE.md` — the same platform, screen by screen, in
+  plain business language for a non-technical reader (a builder, a new
+  staff member) — what a button does, what a number means, which
+  settings are configurable and where. No jargon, no file paths.
+
+Division of labor with *this* file: `CLAUDE.md` stays the narrative —
+decisions made, bugs found and fixed, commit-by-commit history, the
+"why." The two docs above are the reference — always-current structure,
+never a history. A new table, route, or screen gets a row/diagram/section
+in the technical doc and a plain-language paragraph in the functional
+guide before that change is considered done, the same way a schema change
+was already expected to update this file's own sections.
+
+**In-code comments** follow the same spirit this repo has used from the
+start (see how liberally `apps/api/src/index.ts` and every `apps/web/src/
+*.tsx` file already explain themselves) — explain the *business* reason
+for a piece of code in plain English (what a customer/builder/staff
+member would call it), not just what the code technically does. This
+doesn't mean renaming variables or functions to business terms — code
+still needs real identifiers — it's about what the prose *around* the
+code says. That's already been the practice throughout; this just names
+it so it stays deliberate rather than accidental.
 
 ## Working style notes (for whoever picks this up next)
 
