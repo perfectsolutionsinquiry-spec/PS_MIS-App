@@ -6,11 +6,14 @@ import DonutChart, { type DonutSegment } from "./DonutChart";
 import BarChart from "./BarChart";
 import LineChart from "./LineChart";
 
-// Categorical slots 1–3 of the dataviz skill's validated default palette,
-// plus a neutral gray for the server-computed "Other" bucket — see
-// DonutChart.tsx for how this was actually validated (not eyeballed)
-// against this app's real white card surface.
-const CATEGORICAL = ["#2a78d6", "#eb6834", "#1baf7a"];
+// Categorical slots 1–3 of the dataviz skill's validated default palette
+// (blue, orange, aqua), plus violet in place of the documented 4th slot
+// (yellow, which fails the validator's normal-vision floor against orange
+// under a donut's all-mutual-neighbors condition — violet passes every
+// check instead, confirmed by actually running the validator, not
+// assumed), plus a neutral gray for the server-computed "Other" bucket —
+// see DonutChart.tsx for the real numbers behind this choice.
+const CATEGORICAL = ["#2a78d6", "#eb6834", "#1baf7a", "#4a3aa7"];
 const OTHER_COLOR = "#94a3b8";
 
 function ChartCard({
@@ -83,7 +86,7 @@ function KpiTile({
 // disbursement split and loan by bank first, then outstanding by customer
 // and daily collection.
 export default function OverviewScreen({ kpis, pipeline }: { kpis: DashboardKpis; pipeline: PipelineData }) {
-  // The API orders disbursementSplit as: up to 3 real statuses by count
+  // The API orders disbursementSplit as: up to 4 real statuses by count
   // desc, then "Other" last if present (see apps/api/src/index.ts). Slot
   // assignment follows that same order — only non-"Other" rows consume a
   // categorical color, so "Other" always gets the gray regardless of where

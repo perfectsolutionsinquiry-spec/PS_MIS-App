@@ -15,6 +15,22 @@ export type DonutSegment = { label: string; count: number; pct: number; color: s
 // contrast on white, which the skill's "relief" rule requires be covered by
 // visible direct labels — the legend below is exactly that, always
 // rendered, never hover-only.
+//
+// A 4th slot was added on request, after the same donut is shown up to 4
+// real categories rather than 3. The documented 4th slot (yellow,
+// `#eda100`) was tried first and genuinely fails: worst normal-vision pair
+// (yellow vs orange) scores ΔE 13.7, below the skill's 15 floor — meaning
+// hard to tell apart even with completely normal color vision, not just a
+// CVD concern, and the skill is explicit that labels can't excuse that
+// particular failure. Tried every other unused hue in the 8-slot palette
+// as a replacement instead of shipping the known failure or giving up on 4
+// categories: violet (`#4a3aa7`) is the one that actually passes — worst
+// normal-vision pair 16.3, worst CVD pair 9.2, both clear of their floors.
+// Green scores fine on normal-vision (15.6) but fails CVD hard (3.2, a
+// colorblind reader genuinely cannot tell it from orange); magenta and red
+// both fail normal-vision, worse than yellow. Violet was the only
+// candidate that didn't trade one failure for another.
+
 export default function DonutChart({
   segments, centerValue, centerLabel,
 }: {

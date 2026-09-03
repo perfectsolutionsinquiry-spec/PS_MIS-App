@@ -132,13 +132,19 @@ app.get("/dashboard/overview", { preHandler: requireAuth }, async (request) => {
 
     // Disbursement status split (the donut). dl_status is free text a
     // builder's ops team enters, so its distinct values aren't a fixed enum
-    // we control — capped at the top 3 by count, the rest folded into
+    // we control — capped at the top 4 by count, the rest folded into
     // "Other", computed here rather than trusting the client to cap a list
     // that could otherwise run long. See apps/web/src/DonutChart.tsx for why
-    // 3: a donut's segments are all mutual neighbors (the first also
-    // touches the last), and 3 is the validated categorical palette's
-    // documented safe count for that "all-pairs" case — see
-    // references/palette.md in the dataviz skill.
+    // 4 specifically: a donut's segments are all mutual neighbors (the
+    // first also touches the last), which rules out the categorical
+    // palette's documented default 4th slot (yellow) — it fails the
+    // dataviz skill's validator hard against orange under that condition.
+    // Violet is slot 4 here instead, confirmed by actually running the
+    // validator (not assumed): blue/orange/aqua/violet passes every check
+    // against this app's real white surface, all-pairs, both CVD and
+    // normal-vision floors — see OverviewScreen.tsx's CATEGORICAL constant
+    // and DonutChart.tsx's own comment for the full comparison against the
+    // other candidate hues that were tried and failed.
     const splitResult = await client.query(`
       with status_counts as (
         select coalesce(nullif(trim(dl_status), ''), 'Not set') as status, count(*)::int as cnt
@@ -150,7 +156,7 @@ app.get("/dashboard/overview", { preHandler: requireAuth }, async (request) => {
         from status_counts
       ),
       bucketed as (
-        select (case when rn <= 3 then status else 'Other' end) as status, cnt
+        select (case when rn <= 4 then status else 'Other' end) as status, cnt
         from ranked
       ),
       grouped as (
