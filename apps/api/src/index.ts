@@ -71,6 +71,89 @@ app.get("/customers", { preHandler: requireAuth }, async (request) => {
   });
 });
 
+// Overview screen's six KPI tiles (apps/web/src/OverviewScreen.tsx) — the
+// same figures the old single-file MIS tool's Portfolio Overview showed
+// (archive/html-tool, src/charts.js renderKpis), computed here against the
+// live schema instead of a loaded workbook. Every percentage is computed in
+// this query, not on the frontend: the hard rule at the top of this file is
+// that the API is the only place a figure gets derived from another.
+//
+// "Amount due" is the sum of customer_milestones.amount_due for milestones
+// that have actually come due (status due/partial/paid) — not the full
+// agreement value, and not every milestone regardless of date. That's what
+// "balance outstanding" and "collection efficiency" are measured against:
+// what should have been paid by now, not the eventual total.
+//
+// A staff login has app.is_staff='true', which the RLS policy on every
+// table here treats as "no builder_id filter at all" — so a staff user's
+// Overview is a combined figure across every builder. That matches "sees
+// everything across every builder" in CLAUDE.md; a per-builder filter for
+// staff is a later addition, not this one.
+app.get("/dashboard/overview", { preHandler: requireAuth }, async (request) => {
+  if (!pool) return { kpis: null, note: "No database connected." };
+  return withTenantClient(request.identity!, async (client) => {
+    const result = await client.query(`
+      with due_milestones as (
+        select coalesce(sum(amount_due), 0)::numeric as amount_due
+        from customer_milestones
+        where status in ('due', 'partial', 'paid')
+      ),
+      received as (
+        select coalesce(sum(flat_cost_received + gst_received), 0)::numeric as total_received
+        from recovery_transactions
+      ),
+      cust as (
+        select
+          coalesce(sum(agreement_value), 0)::numeric as total_agreement_value,
+          count(*) as units_tracked,
+          coalesce(sum(loan_amount), 0)::numeric as loan_amount_sanctioned,
+          count(*) filter (where loan_amount is not null and loan_amount > 0) as loan_cases
+        from customers
+      )
+      select
+        cust.total_agreement_value,
+        cust.units_tracked,
+        received.total_received,
+        case when cust.total_agreement_value > 0
+             then round(received.total_received / cust.total_agreement_value * 100, 1)
+             else null end as received_pct_of_agreement,
+        due_milestones.amount_due,
+        (due_milestones.amount_due - received.total_received) as balance_outstanding,
+        case when due_milestones.amount_due > 0
+             then round((due_milestones.amount_due - received.total_received) / due_milestones.amount_due * 100, 1)
+             else null end as balance_pct_of_due,
+        cust.loan_amount_sanctioned,
+        cust.loan_cases,
+        case when due_milestones.amount_due > 0
+             then round(received.total_received / due_milestones.amount_due * 100, 1)
+             else null end as collection_efficiency_pct
+      from cust, received, due_milestones
+    `);
+
+    // pg returns `numeric` columns as strings, not JS numbers, so every
+    // figure is parsed here — once, in the one place responsible for it —
+    // rather than leaving each caller to remember to do it.
+    const row = result.rows[0];
+    const num = (v: unknown) => (v === null || v === undefined ? 0 : Number(v));
+    const pctOrNull = (v: unknown) => (v === null || v === undefined ? null : Number(v));
+
+    return {
+      kpis: {
+        totalAgreementValue: num(row.total_agreement_value),
+        unitsTracked: num(row.units_tracked),
+        totalReceived: num(row.total_received),
+        receivedPctOfAgreement: pctOrNull(row.received_pct_of_agreement),
+        amountDue: num(row.amount_due),
+        balanceOutstanding: num(row.balance_outstanding),
+        balancePctOfDue: pctOrNull(row.balance_pct_of_due),
+        loanAmountSanctioned: num(row.loan_amount_sanctioned),
+        loanCases: num(row.loan_cases),
+        collectionEfficiencyPct: pctOrNull(row.collection_efficiency_pct),
+      },
+    };
+  });
+});
+
 const port = Number(process.env.PORT ?? 3000);
 
 app.listen({ port, host: "0.0.0.0" }).catch((err) => {

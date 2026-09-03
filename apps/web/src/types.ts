@@ -14,3 +14,20 @@ export type Customer = {
   stage: string | null;
   created_at: string;
 };
+
+// Matches GET /dashboard/overview's kpis object exactly. Every figure and
+// every percentage here is computed server-side (apps/api/src/index.ts) —
+// the frontend (OverviewScreen.tsx) only formats and colors these, it never
+// derives one of these numbers from another.
+export type DashboardKpis = {
+  totalAgreementValue: number;
+  unitsTracked: number;
+  totalReceived: number;
+  receivedPctOfAgreement: number | null;
+  amountDue: number;
+  balanceOutstanding: number;
+  balancePctOfDue: number | null;
+  loanAmountSanctioned: number;
+  loanCases: number;
+  collectionEfficiencyPct: number | null;
+};

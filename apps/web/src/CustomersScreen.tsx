@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import type { Customer } from "./types";
+import PageHeader from "./PageHeader";
 
 // Purely presentational — colors a stage badge based on the exact text the
 // API sends back. Falls back to a neutral badge for any stage value not
@@ -53,6 +54,8 @@ export default function CustomersScreen({ customers }: { customers: Customer[] }
 
   return (
     <div>
+      <PageHeader title="Customers" />
+
       <div
         style={{
           display: "flex",
@@ -63,14 +66,11 @@ export default function CustomersScreen({ customers }: { customers: Customer[] }
           flexWrap: "wrap",
         }}
       >
-        <div>
-          <h1 style={{ fontSize: "1.3rem", fontWeight: 700, color: "#0f172a", margin: 0 }}>Customers</h1>
-          <p style={{ color: "#64748b", fontSize: "0.85rem", margin: "0.2rem 0 0" }}>
-            {customers.length === 0
-              ? "No customers yet."
-              : `Showing ${filtered.length} of ${customers.length} customer${customers.length === 1 ? "" : "s"}`}
-          </p>
-        </div>
+        <p style={{ color: "#64748b", fontSize: "0.85rem", margin: 0 }}>
+          {customers.length === 0
+            ? "No customers yet."
+            : `Showing ${filtered.length} of ${customers.length} customer${customers.length === 1 ? "" : "s"}`}
+        </p>
 
         {customers.length > 0 && (
           <input
