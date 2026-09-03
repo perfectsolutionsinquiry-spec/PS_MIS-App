@@ -176,9 +176,11 @@ don't assume a save took effect.
       the first time (see "Real data loaded" below), guardrail #3 done
   17. `d68b050` — guardrail #4 done: Neon point-in-time restore actually
       rehearsed, not just confirmed enabled
-  18. this file — detailed builder-agreement draft (guardrail #10 / #5),
+  18. `d9c111f` — detailed builder-agreement draft (guardrail #10 / #5),
       grounded in the actual code and business terms rather than a generic
       template, for a lawyer to work from
+  19. this file — the last two Overview chart cards: outstanding balance by
+      customer and daily collection, `LineChart.tsx` new
 
 ## Database schema (13 tables, migrations 0001-0003)
 
@@ -307,17 +309,24 @@ first (cheap, real SQL, no new dependency), the chart cards next.
   git history if that draft's reasoning is ever needed again.
 - `OverviewScreen.tsx` — the six KPI tiles (total agreement value, total
   received, balance outstanding, loan amount sanctioned, collection
-  efficiency, units tracked), all from `/dashboard/overview`. The
-  "Collection & loan pipeline" chart cards below them (disbursement split,
-  loan by bank, outstanding by customer, daily collection) are not built yet
-  — that section is currently a placeholder.
+  efficiency, units tracked) plus all four "Collection & loan pipeline"
+  chart cards, all from `/dashboard/overview`: disbursement split
+  (`DonutChart.tsx`), loan by bank and outstanding by customer (both
+  `BarChart.tsx`, reused — a ranked single-hue bar chart is the same form
+  either way), and daily collection, grouped by week (`LineChart.tsx`, with
+  a hover crosshair — the one chart here with too many points to
+  direct-label every one). All hand-rolled SVG, colors validated against
+  the dataviz skill's checks, no charting library — deliberately, since a
+  dependency that can't be typechecked or installed locally (no Node on
+  this machine) is real risk to add blind.
 - `PageHeader.tsx` — shared all-caps title + icon-button row (email/export),
   used by Overview and Customers so they read as one app. The icon buttons
   are visibly present but disabled, same "soon" treatment as an unbuilt nav
   item — nothing pretends to work that doesn't yet.
 - `format.ts` — presentational number formatting only (the Cr/L compact
-  form). Never derives a figure; every number it touches was already
-  computed by the API.
+  form, plus a UTC-safe short-date formatter for the daily-collection
+  chart's axis). Never derives a figure; every number it touches was
+  already computed by the API.
 - `CustomersScreen.tsx` — the actual data table: client-side search filter,
   color-coded stage badges (REGISTERED/BOOKED/AGREEMENT DONE/UNSOLD/HOLD/
   CANCELLED), all from data the API already sent — no new business logic
@@ -341,14 +350,6 @@ someone's logged in, especially if a tile looks off.
 
 ## Not started yet
 
-- Two of Overview's four "Collection & loan pipeline" chart cards are built
-  (disbursement split — a donut, `DonutChart.tsx`; loan by bank — a bar,
-  `BarChart.tsx`; both hand-rolled SVG, no charting library, colors validated
-  against the dataviz skill's checks). **Outstanding by customer and daily
-  collection are still the placeholder.** No charting library is in
-  `apps/web/package.json`, deliberately — a dependency that can't be
-  typechecked or installed locally (no Node on this machine) is real risk to
-  add blind.
 - No admin UI for provisioning `staff_users`/`builder_users` — still
   manual SQL via Neon's SQL Editor.
 - Fuller CRUD screens beyond the read-only customer list: add/edit

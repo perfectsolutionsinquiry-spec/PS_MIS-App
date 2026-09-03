@@ -32,12 +32,18 @@ export type DashboardKpis = {
   collectionEfficiencyPct: number | null;
 };
 
-// The "Collection & loan pipeline" chart cards. Both arrays are already
-// capped and bucketed server-side (top N + "Other") — the frontend renders
-// exactly what arrives, it doesn't decide how many categories to show.
+// The "Collection & loan pipeline" chart cards. Every array is already
+// capped/bucketed/date-filled server-side (top N + "Other", or a complete
+// week-by-week calendar with zeros for empty weeks) — the frontend renders
+// exactly what arrives, it doesn't decide how many categories or which
+// dates to show.
 export type DisbursementSplitRow = { status: string; count: number; pct: number };
 export type LoanByBankRow = { bank: string; amount: number };
+export type OutstandingByCustomerRow = { customer: string; balance: number };
+export type DailyCollectionRow = { weekStart: string; amount: number };
 export type PipelineData = {
   disbursementSplit: DisbursementSplitRow[];
   loanByBank: LoanByBankRow[];
+  outstandingByCustomer: OutstandingByCustomerRow[];
+  dailyCollection: DailyCollectionRow[];
 };

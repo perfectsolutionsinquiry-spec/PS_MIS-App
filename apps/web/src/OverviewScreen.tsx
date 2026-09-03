@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
 import type { DashboardKpis, PipelineData } from "./types";
-import { formatCompactInr, formatPct } from "./format";
+import { formatCompactInr, formatPct, formatShortDate } from "./format";
 import PageHeader from "./PageHeader";
 import DonutChart, { type DonutSegment } from "./DonutChart";
 import BarChart from "./BarChart";
+import LineChart from "./LineChart";
 
 // Categorical slots 1–3 of the dataviz skill's validated default palette,
 // plus a neutral gray for the server-computed "Other" bucket — see
@@ -78,10 +79,9 @@ function KpiTile({
 // old single-file MIS tool's Portfolio Overview showed (archive/html-tool,
 // src/charts.js renderKpis) — same shape, now computed by
 // GET /dashboard/overview against the live Postgres schema instead of a
-// loaded workbook. The chart cards from that tool (disbursement split, loan
-// by bank, outstanding by customer, daily collection) aren't built yet;
-// this screen proves the real figures render correctly before charts are
-// added on top of them.
+// loaded workbook. All four chart cards from that tool are now built below:
+// disbursement split and loan by bank first, then outstanding by customer
+// and daily collection.
 export default function OverviewScreen({ kpis, pipeline }: { kpis: DashboardKpis; pipeline: PipelineData }) {
   // The API orders disbursementSplit as: up to 3 real statuses by count
   // desc, then "Other" last if present (see apps/api/src/index.ts). Slot
@@ -97,6 +97,8 @@ export default function OverviewScreen({ kpis, pipeline }: { kpis: DashboardKpis
   }));
 
   const bankBars = pipeline.loanByBank.map((row) => ({ label: row.bank, value: row.amount }));
+  const outstandingBars = pipeline.outstandingByCustomer.map((row) => ({ label: row.customer, value: row.balance }));
+  const dailyPoints = pipeline.dailyCollection.map((row) => ({ label: formatShortDate(row.weekStart), value: row.amount }));
 
   return (
     <div>
@@ -167,20 +169,19 @@ export default function OverviewScreen({ kpis, pipeline }: { kpis: DashboardKpis
         </ChartCard>
       </div>
 
-      {/* Outstanding by customer and daily collection — the other two cards
-          from the reference screenshot — aren't built yet. */}
       <div
         style={{
-          background: "white",
-          border: "1px dashed #e2e8f0",
-          borderRadius: 12,
-          padding: "1.75rem 1rem",
-          textAlign: "center",
-          color: "#94a3b8",
-          fontSize: "0.85rem",
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          gap: "1rem",
         }}
       >
-        Outstanding balance by customer and daily collection charts are next.
+        <ChartCard title="Outstanding balance by customer" subtitle="Top 10 customers by balance currently outstanding">
+          <BarChart bars={outstandingBars} formatValue={formatCompactInr} />
+        </ChartCard>
+        <ChartCard title="Daily collection" subtitle="Money received, grouped by week (last 12 weeks)">
+          <LineChart points={dailyPoints} formatValue={formatCompactInr} />
+        </ChartCard>
       </div>
     </div>
   );

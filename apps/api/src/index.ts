@@ -190,6 +190,59 @@ app.get("/dashboard/overview", { preHandler: requireAuth }, async (request) => {
       order by (bank = 'Other'), amount desc
     `);
 
+    // Outstanding balance by customer (the second bar chart). Same "amount
+    // due" definition as the KPI tiles above — due/partial/paid milestones
+    // only — minus what's actually been received, per customer. Capped at
+    // the top 10 by balance and filtered to > 0: a customer who is paid up
+    // or ahead isn't "outstanding," and 288 bars would not be a chart.
+    const outstandingResult = await client.query(`
+      with due_per_customer as (
+        select customer_id, coalesce(sum(amount_due), 0)::numeric as amount_due
+        from customer_milestones
+        where status in ('due', 'partial', 'paid')
+        group by customer_id
+      ),
+      received_per_customer as (
+        select customer_id, coalesce(sum(flat_cost_received + gst_received), 0)::numeric as received
+        from recovery_transactions
+        group by customer_id
+      )
+      select c.full_name,
+             (coalesce(d.amount_due, 0) - coalesce(r.received, 0)) as balance
+      from customers c
+      left join due_per_customer d on d.customer_id = c.id
+      left join received_per_customer r on r.customer_id = c.id
+      where (coalesce(d.amount_due, 0) - coalesce(r.received, 0)) > 0
+      order by balance desc
+      limit 10
+    `);
+
+    // Daily collection, bucketed by week (the line chart). Built from a
+    // generated calendar of the last 12 week-starts left-joined against
+    // actual receipts, not just "group by week" on its own — a week with
+    // zero collections would otherwise be missing from the result entirely
+    // rather than showing as zero, which would silently misrepresent the
+    // x-axis as evenly spaced when it wasn't.
+    const dailyResult = await client.query(`
+      with weeks as (
+        select generate_series(
+          date_trunc('week', current_date - interval '77 days')::date,
+          date_trunc('week', current_date)::date,
+          interval '7 days'
+        )::date as week_start
+      ),
+      collected as (
+        select date_trunc('week', received_on)::date as week_start,
+               sum(flat_cost_received + gst_received)::numeric as amount
+        from recovery_transactions
+        group by 1
+      )
+      select w.week_start, coalesce(c.amount, 0) as amount
+      from weeks w
+      left join collected c on c.week_start = w.week_start
+      order by w.week_start
+    `);
+
     // pg returns `numeric` columns as strings, not JS numbers, so every
     // figure is parsed here — once, in the one place responsible for it —
     // rather than leaving each caller to remember to do it.
@@ -218,6 +271,17 @@ app.get("/dashboard/overview", { preHandler: requireAuth }, async (request) => {
         })),
         loanByBank: bankResult.rows.map((r) => ({
           bank: String(r.bank),
+          amount: num(r.amount),
+        })),
+        outstandingByCustomer: outstandingResult.rows.map((r) => ({
+          customer: String(r.full_name),
+          balance: num(r.balance),
+        })),
+        dailyCollection: dailyResult.rows.map((r) => ({
+          // date columns come back as JS Date objects from pg, already in
+          // local time with no time component that matters here — format
+          // as YYYY-MM-DD so the frontend gets a plain, unambiguous string.
+          weekStart: (r.week_start as Date).toISOString().slice(0, 10),
           amount: num(r.amount),
         })),
       },

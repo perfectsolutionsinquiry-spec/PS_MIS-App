@@ -15,3 +15,13 @@ export function formatCompactInr(value: number): string {
 export function formatPct(value: number | null): string {
   return value === null ? "—" : `${value}%`;
 }
+
+// "2026-09-01" -> "Sep 1". Parsed as UTC explicitly — the API sends a plain
+// YYYY-MM-DD date with no time component, and letting the browser interpret
+// that as local time can shift it a day either way depending on the
+// viewer's timezone offset.
+export function formatShortDate(isoDate: string): string {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+}
