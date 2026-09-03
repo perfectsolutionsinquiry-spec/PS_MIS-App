@@ -26,9 +26,17 @@ export default function DonutChart({
     return <div style={{ textAlign: "center", color: "#94a3b8", fontSize: "0.85rem", padding: "2.5rem 0" }}>No data yet.</div>;
   }
 
-  const size = 176;
-  const strokeWidth = 26;
-  const r = (size - strokeWidth) / 2;
+  // r was previously derived as (size - strokeWidth) / 2, which put the
+  // ring's outer edge at EXACTLY size/2 — zero margin against the SVG's own
+  // boundary. An SVG root clips to its viewBox by default, so anything at
+  // that edge (ordinary anti-aliasing, and definitely the +4px hover-widen
+  // below) got flattened off — the "cut" visible at the ring's left/right
+  // tangent points. r is now independent of strokeWidth, sized with real
+  // clearance for the widest state (hover) plus a few px of headroom.
+  const size = 180;
+  const strokeWidth = 22;
+  const hoverStrokeWidth = 26;
+  const r = 64;
   const cx = size / 2;
   const cy = size / 2;
   const circumference = 2 * Math.PI * r;
@@ -38,7 +46,7 @@ export default function DonutChart({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem" }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ overflow: "visible" }}>
         <g transform={`rotate(-90 ${cx} ${cy})`}>
           <circle cx={cx} cy={cy} r={r} fill="none" stroke="#f1f5f9" strokeWidth={strokeWidth} />
           {segments.map((seg, i) => {
@@ -56,7 +64,7 @@ export default function DonutChart({
                 r={r}
                 fill="none"
                 stroke={seg.color}
-                strokeWidth={isActive ? strokeWidth + 4 : strokeWidth}
+                strokeWidth={isActive ? hoverStrokeWidth : strokeWidth}
                 strokeDasharray={`${dash} ${circumference - dash}`}
                 transform={`rotate(${rotation} ${cx} ${cy})`}
                 style={{ transition: "stroke-width 0.1s ease", cursor: "pointer" }}
