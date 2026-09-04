@@ -109,10 +109,40 @@ export function AriaSelect({
       <ButtonLike style={style}>
         <SelectValue>{({ selectedText }) => selectedText || placeholder || ""}</SelectValue>
       </ButtonLike>
-      <Popover>
-        <ListBox>
+      <Popover
+        style={{
+          width: "var(--trigger-width)",
+          minWidth: "max-content",
+          background: "white",
+          border: "1px solid #C7D3E4",
+          borderRadius: 6,
+          boxShadow: "0 4px 12px rgba(27,43,75,0.16)",
+          overflow: "hidden",
+          zIndex: 1100,
+        }}
+      >
+        <ListBox
+          style={{
+            maxHeight: 180,
+            overflowY: "auto",
+            padding: 4,
+            outline: "none",
+          }}
+        >
           {options.map((option) => (
-            <ListBoxItem key={option.value} id={option.value} textValue={option.label}>
+            <ListBoxItem
+              key={option.value}
+              id={option.value}
+              textValue={option.label}
+              style={{
+                padding: "0.45rem 0.6rem",
+                borderRadius: 4,
+                color: "#1B2B4B",
+                fontSize: "0.8rem",
+                cursor: "pointer",
+                outline: "none",
+              }}
+            >
               {option.label}
             </ListBoxItem>
           ))}
@@ -124,7 +154,7 @@ export function AriaSelect({
 
 function ButtonLike({ children, style }: { children: ReactNode; style?: CSSProperties }) {
   return (
-    <Button type="button" style={{ ...style, textAlign: "left" }}>
+    <Button type="button" style={{ ...style, textAlign: "left", boxSizing: "border-box" }}>
       {children}
     </Button>
   );
