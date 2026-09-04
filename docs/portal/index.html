@@ -283,7 +283,8 @@ const CATEGORIES = [
       `},
       { id: "provider-multi-app", title: "Provider and multi-application boundaries", html: `
         <h3>Current providers are replaceable adapters</h3>
-        <p>Clerk handles identity, Neon/PostgreSQL handles relational storage and RLS, and Render handles deployment. They remain in place because they work today, but new business services must use internal interfaces rather than provider SDK types. This allows a future provider migration without rewriting Collections or every future application.</p>
+        <p>Clerk handles identity, Neon/PostgreSQL handles relational storage and RLS, and Render handles deployment. They remain in place because they work today. The replaceability boundary is currently partial: the authentication edge and frontend still import Clerk directly, the API still uses the PostgreSQL/<code>pg</code> adapter directly, and Render is deployment configuration rather than an application runtime adapter. New business services must use internal interfaces instead of adding more provider coupling.</p>
+        <p>This is a direction for practical replacement, not a claim that replacement is already complete or migration-free. A future provider change still requires completing the relevant adapter boundary, configuration/data migration, and conformance tests.</p>
         <p>We do not add a second provider just to prove portability. A versioned tenant export and small adapters are the practical foundation; conformance tests and actual replacement work happen when a real migration or procurement need exists.</p>
         <h3>Collections is the first bounded application</h3>
         <p>The shared platform layer will eventually provide identity links, tenant memberships, capabilities, audit, settings, exports, file metadata, workflow contracts, events, correlation, and telemetry. Collections owns customers, projects, units, milestones, payments, loans, and its reports.</p>

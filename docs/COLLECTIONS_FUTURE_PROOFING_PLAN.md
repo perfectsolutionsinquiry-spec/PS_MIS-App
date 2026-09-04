@@ -407,7 +407,7 @@ Status meanings:
 
 - [x] Define the capability catalogue in one server-owned module.
 - [x] Define the approved Collections roles and their capability bundles.
-- [ ] Introduce an internal membership/context type without changing the
+- [x] Introduce an internal membership/context type without changing the
   current login experience.
 - [x] Enforce capabilities on the server, never in the frontend alone.
 - [ ] Keep staff access explicit and auditable rather than treating staff as
@@ -459,7 +459,9 @@ Status meanings:
 - [ ] Create repository interfaces for database operations.
 - [ ] Keep PostgreSQL as the reference adapter; do not add another database
   engine now.
-- [ ] Keep Clerk behind an identity verification boundary for new code.
+- [ ] Keep Clerk behind an identity verification boundary for new code. The
+  current authentication edge still imports Clerk directly; this remains
+  planned work, not a completed provider adapter.
 - [ ] Prevent Collections code from importing future application modules.
 - [ ] Move existing routes incrementally, one use case at a time.
 - [ ] Run build, isolation, authorization, and migration tests after each

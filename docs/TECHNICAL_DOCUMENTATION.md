@@ -286,14 +286,20 @@ experience.
 
 Clerk, Neon/PostgreSQL, and Render are the current providers, not business
 domain contracts. They remain in place now because they are working production
-choices. New application services must use internal identity, tenant context,
-repository, unit-of-work, storage, event, and telemetry interfaces rather than
-provider SDK types.
+choices. The replaceability boundary is currently partial: `auth.ts` and the
+frontend still import Clerk directly, `db.ts` and route code still use the
+PostgreSQL/`pg` adapter directly, and Render is represented by deployment
+configuration rather than an application runtime adapter. New application
+services must use internal identity, tenant context, repository, unit-of-work,
+storage, event, and telemetry interfaces rather than adding more provider SDK
+coupling.
 
-This creates practical replaceability: a future Clerk, PostgreSQL hosting
-provider, or deployment platform can be introduced by replacing an adapter and
-running a documented migration. It does not claim that a provider migration
-is free or that a second provider is needed today.
+The current foundations make future replacement narrower than a business-logic
+rewrite, but they do not claim that replacement is complete or migration-free.
+A future Clerk, PostgreSQL hosting provider, or deployment platform still
+requires completing the relevant adapter boundary, configuration migration,
+data/schema migration where applicable, and conformance tests. No second
+provider is needed today.
 
 Collections is the first bounded application. The reusable platform layer
 should own identity links, tenant memberships, capabilities, audit, settings,
