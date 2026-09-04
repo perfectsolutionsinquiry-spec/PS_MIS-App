@@ -91,7 +91,7 @@ export default function CustomersScreen({
         onRowClick={(c) => onSelect(c.id)}
         searchPlaceholder="Search name, phone, email, stage…"
         onNew={onNew}
-        newLabel="New customer"
+        newLabel="New"
         emptyLabel="No customers yet."
       />
     </div>

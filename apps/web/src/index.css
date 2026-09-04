@@ -61,6 +61,11 @@ button[data-rac] {
 }
 
 @media (max-width: 680px) {
+  .new-record-button {
+    padding: 0.45rem 0.7rem !important;
+    white-space: nowrap;
+  }
+
   .advanced-filter-condition {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
   }
@@ -90,6 +95,11 @@ button[data-rac] {
 }
 
 @media (max-width: 420px) {
+  .new-record-button {
+    padding: 0.4rem 0.6rem !important;
+    font-size: 0.78rem !important;
+  }
+
   .slushbucket-columns {
     grid-template-columns: minmax(0, 1fr) !important;
   }

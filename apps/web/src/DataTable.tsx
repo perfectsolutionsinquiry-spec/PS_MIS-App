@@ -319,7 +319,7 @@ export default function DataTable<T>({
             <GearIcon />
           </Button>
           {onNew && (
-            <Button type="button" onClick={onNew} style={primaryBtnStyle}>
+            <Button type="button" className="new-record-button" onClick={onNew} style={primaryBtnStyle}>
               + {newLabel}
             </Button>
           )}
