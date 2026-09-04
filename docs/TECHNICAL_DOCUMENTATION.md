@@ -1,5 +1,12 @@
 # Technical Documentation
 
+## Change-control rule
+
+Implementation follows the user's exact command and stated scope. Engineers
+must not guess, add, simplify, or improve behavior beyond that request. Any
+reasonable interpretation or proposed enhancement requires user permission
+before code changes are made.
+
 **Audience:** whoever is fixing a bug or building the next feature — Azhar,
 a future developer, or a future Claude Code session with no memory of how
 this was built. `CLAUDE.md` at the repo root tells the *story* (how we got

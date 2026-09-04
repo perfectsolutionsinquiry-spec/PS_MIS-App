@@ -239,6 +239,9 @@ const CATEGORIES = [
     id: "technical",
     label: "Technical Documentation",
     articles: [
+      { id: "change-control", title: "Change-control rule", html: `
+        <p>Implementation follows the user's exact command and stated scope. Do not guess, add, simplify, or improve behavior beyond the request. Ask permission before implementing any reasonable interpretation or enhancement.</p>
+      `},
       { id: "architecture", title: "Architecture at a glance", html: `
         <p>The one rule everything else follows: <strong>the API decides, the frontend displays.</strong> No business number is computed in <code>apps/web</code>, and no access decision is made there either — every route re-derives who's asking from the verified Clerk token, never from anything the client claims.</p>
         <pre class="mermaid">flowchart LR

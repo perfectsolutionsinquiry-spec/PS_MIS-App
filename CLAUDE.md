@@ -486,6 +486,12 @@ session moved to writing files directly into this local folder instead
 (once folder access was granted) — much less error-prone, worth continuing
 that way rather than going back to zips.
 
+**Instruction fidelity is mandatory:** follow Azhar's wording and requested
+scope exactly. Do not guess, add, simplify, or improve behavior, labels,
+styling, or scope beyond the command. If an interpretation or improvement
+would be reasonable but was not explicitly requested, ask for permission
+before implementing it.
+
 **Node is not installed on this machine, and `node_modules` has never been
 installed in this folder.** Nothing here can be built, typechecked or run
 locally — `npm run build`, `tsc` and the isolation test suite are all

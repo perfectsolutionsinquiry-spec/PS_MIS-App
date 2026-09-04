@@ -1,5 +1,12 @@
 # Functional Guide — How the Platform Works
 
+## Instruction fidelity
+
+Requested behavior, labels, and visual details are implemented exactly as
+specified. The team does not guess or add improvements beyond the request;
+when an interpretation or enhancement is needed, the user is asked for
+permission first. — How the Platform Works
+
 **Audience:** anyone using or explaining this platform who doesn't need
 the code — Azhar, a new staff member, a builder's admin, a support
 conversation. No technical jargon. For "which file does this" or "how is

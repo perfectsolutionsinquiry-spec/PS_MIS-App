@@ -22,6 +22,12 @@ and the two reference docs drifted out of date before (see `CLAUDE.md`'s
 commit-history entries that exist purely to catch a stale section back
 up).
 
+**Instruction fidelity:** follow the user's wording and requested scope
+exactly. Do not guess, add, simplify, or improve behavior, labels, styling,
+or scope beyond the request. If an interpretation or improvement is
+reasonable but not explicitly requested, ask the user for permission before
+implementing it.
+
 - [ ] **Code is commented** in plain, business-language prose explaining
       *why*, not just restating what the code does — the standing
       convention in `CLAUDE.md`'s "Documentation practice" section.
