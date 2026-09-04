@@ -108,6 +108,9 @@ Customers behavior unless a separate request explicitly changes them.
 - RLS uses `app.is_staff` or `app.current_builder_id` inside the same
   transaction as the business query.
 - The client never supplies the authority for staff status or builder scope.
+- A resolved `staff_users` identity receives the platform-staff capability
+  bundle, preserving the pre-capability staff access model. Builder-user role
+  values are mapped explicitly, with unknown values denied.
 
 The capability model, audit events, and tenant-neutral platform types are
 future implementation work; they must be introduced without weakening this

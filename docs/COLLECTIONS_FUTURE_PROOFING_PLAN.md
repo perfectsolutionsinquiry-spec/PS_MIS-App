@@ -378,6 +378,11 @@ The existing `builder_users.role` value may remain as a compatibility field
 while the capability model is introduced. Do not remove it until migration
 and access tests prove the replacement is complete.
 
+Staff compatibility rule: rows resolved from `staff_users` receive the
+platform-staff capability bundle because that table is already the trusted
+Perfect Solutions staff boundary. Builder-user free-text roles remain
+capability-mapped and deny unknown roles until they are explicitly migrated.
+
 ## Approved implementation checklist
 
 Status meanings:

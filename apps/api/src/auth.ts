@@ -53,7 +53,10 @@ async function lookupIdentity(clerkUserId: string): Promise<Identity | null> {
       staffId: row.id,
       fullName: row.full_name,
       role: row.role,
-      capabilities: capabilitiesForRole(row.role),
+      // staff_users is already the trusted local staff identity boundary.
+      // Preserve the existing staff access model while the free-text role
+      // column is migrated to explicit capabilities later.
+      capabilities: capabilitiesForRole("platform_staff"),
     };
   }
 

@@ -47,4 +47,9 @@ describe("Collections authorization catalogue", () => {
       body: { error: "This account does not have the payments.reverse capability." },
     });
   });
+
+  it("preserves full existing access for the staff identity boundary", () => {
+    expect(hasCollectionsCapability("platform_staff", "reports.read")).toBe(true);
+    expect(hasCollectionsCapability("platform_staff", "users.manage")).toBe(true);
+  });
 });
