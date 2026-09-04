@@ -78,8 +78,9 @@ refresh button.
   reverse the order.
 - **Search within a column** — click the ⋮ next to a column header for a
   focused search on just that column (Contains, or Starts with).
-- **Search everywhere** — the search box above the table searches name,
-  phone, email, and stage all at once.
+- **Search everywhere** — use the compact magnifier button above the table to
+  expand a search field; the magnifier remains at the field's right edge.
+  It searches name, phone, email, and stage all at once.
 - **Choose which columns show** — the gear icon opens a two-list picker:
   search available columns, tick a column to add it, remove selected columns,
   and use the arrow controls to arrange the selected order before Apply.

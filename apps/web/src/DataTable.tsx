@@ -118,6 +118,7 @@ export default function DataTable<T>({
   emptyLabel?: string;
 }) {
   const [globalQuery, setGlobalQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
   const [sort, setSort] = useState<SortState | null>(null);
   const [columnFilters, setColumnFilters] = useState<Record<string, ColumnFilter>>({});
   // Which column's filter menu is open, plus the ⋮ button's own full
@@ -263,21 +264,42 @@ export default function DataTable<T>({
 
         <div style={{ display: "flex", gap: "0.6rem", alignItems: "center" }}>
           {rows.length > 0 && (
-            <AriaTextField
-              value={globalQuery}
-              onChange={setGlobalQuery}
-              placeholder={searchPlaceholder}
-              aria-label={searchPlaceholder}
-              style={{
-                padding: "0.5rem 0.85rem",
-                borderRadius: 8,
-                border: "1px solid #e2e8f0",
-                fontSize: "0.85rem",
-                width: 260,
-                outline: "none",
-                background: "white",
-              }}
-            />
+            searchOpen ? (
+              <div style={{ display: "flex", alignItems: "center", width: 260, height: 36, border: "1px solid #e2e8f0", borderRadius: 8, background: "white", overflow: "hidden" }}>
+                <AriaTextField
+                  autoFocus
+                  value={globalQuery}
+                  onChange={setGlobalQuery}
+                  placeholder="Search…"
+                  aria-label={searchPlaceholder}
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    height: "100%",
+                    boxSizing: "border-box",
+                    padding: "0.5rem 0.7rem",
+                    border: "none",
+                    outline: "none",
+                    fontSize: "0.85rem",
+                    background: "transparent",
+                  }}
+                />
+                <Button
+                  type="button"
+                  aria-label="Close search"
+                  onClick={() => {
+                    if (!globalQuery) setSearchOpen(false);
+                  }}
+                  style={{ border: "none", background: "transparent", color: PS_COLORS.grey, display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, padding: 0, cursor: globalQuery ? "default" : "pointer" }}
+                >
+                  <SearchIcon />
+                </Button>
+              </div>
+            ) : (
+              <Button type="button" aria-label={`Search customers: ${searchPlaceholder}`} onClick={() => setSearchOpen(true)} style={iconButtonStyle}>
+                <SearchIcon />
+              </Button>
+            )
           )}
           <Button
             type="button"
@@ -471,6 +493,10 @@ function formatCell(value: string | number | null): string {
 
 function FilterIcon() {
   return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 5h16M7 12h10M10 19h4" /></svg>;
+}
+
+function SearchIcon() {
+  return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg>;
 }
 
 function TrashIcon() {
