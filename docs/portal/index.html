@@ -397,6 +397,33 @@ const CATEGORIES = [
           <tr><td>A <code>VITE_</code>-prefixed env var change isn't taking effect</td><td>Baked in at build time — trigger a manual redeploy, verify by the bundle's actual content</td></tr>
         </table></div>
       `},
+      { id: "definition-of-done", title: "Definition of Done", html: `
+        <p>A checklist to run against <strong>every change, however small</strong>, before it's called complete — the moment a commit gets pushed, not something reviewed after the fact. Full text: <code>docs/DEFINITION_OF_DONE.md</code>.</p>
+        <h3>1. Documentation — check this first</h3>
+        <ul>
+          <li>Code is commented in plain, business-language prose explaining <em>why</em>.</li>
+          <li><code>docs/TECHNICAL_DOCUMENTATION.md</code> updated — a new/changed table, route, file, or flow gets a row/diagram.</li>
+          <li><code>docs/FUNCTIONAL_GUIDE.md</code> updated — a new/changed screen or behavior gets a plain-language paragraph.</li>
+          <li>This portal updated to match — it's a rendering of the two docs above, not a third independent source.</li>
+        </ul>
+        <h3>2. Visual verification — for anything that touches the UI</h3>
+        <ul>
+          <li>Actually rendered and looked at — a live reproduction, never just reasoned about from the code.</li>
+          <li>Checked at the state most likely to break it, not just the first state that happens to work.</li>
+          <li>No new console errors on load.</li>
+        </ul>
+        <h3>3. Deploy verification — after pushing</h3>
+        <ul>
+          <li>New bundle hash confirmed live, cache-busted.</li>
+          <li>Bundle content spot-checked for the actual new feature, not just a changed filename hash.</li>
+          <li>Any new API route confirmed live and correctly gated (401, not 404).</li>
+        </ul>
+        <h3>4. Known gaps — say them out loud</h3>
+        <ul>
+          <li>Any deliberate simplification or deferred scope is stated in the commit message and/or the docs.</li>
+        </ul>
+        <div class="callout"><strong>Why this exists:</strong> the column-filter menu shipped "fixed and verified" once and was still visibly broken on the next real check. That's the process gap rule 2 closes.</div>
+      `},
     ]
   },
   {

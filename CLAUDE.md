@@ -426,8 +426,17 @@ someone's logged in, especially if a tile looks off.
 
 ## Documentation practice
 
-Two living reference docs exist alongside this narrative one, and **every
-change — however small — updates the relevant one in the same commit**:
+**`docs/DEFINITION_OF_DONE.md` is the actual checklist — run it against
+every change before calling it complete, not just when something visibly
+breaks.** Its first section is documentation itself (the three items
+below, checked before anything else); its later sections cover visual
+verification, deploy verification, and disclosing known gaps. This
+section explains *what* the three docs are; that file is *the checklist
+that enforces updating them*.
+
+Three living reference docs exist alongside this narrative one, and
+**every change — however small — updates the relevant ones in the same
+commit**:
 
 - `docs/TECHNICAL_DOCUMENTATION.md` — schema map, data-flow diagrams
   (Mermaid, so they render on GitHub and stay diffable as plain text —
@@ -438,14 +447,20 @@ change — however small — updates the relevant one in the same commit**:
   plain business language for a non-technical reader (a builder, a new
   staff member) — what a button does, what a number means, which
   settings are configurable and where. No jargon, no file paths.
+- `docs/portal/index.html` — a single searchable, browsable HTML
+  rendering of the two docs above (left nav by category, keyword search
+  across every article, Mermaid diagrams rendered for real). Not a third
+  independent source — it needs the same manual update whenever either
+  of the two above changes, or it drifts.
 
 Division of labor with *this* file: `CLAUDE.md` stays the narrative —
 decisions made, bugs found and fixed, commit-by-commit history, the
-"why." The two docs above are the reference — always-current structure,
+"why." The docs above are the reference — always-current structure,
 never a history. A new table, route, or screen gets a row/diagram/section
-in the technical doc and a plain-language paragraph in the functional
-guide before that change is considered done, the same way a schema change
-was already expected to update this file's own sections.
+in the technical doc, a plain-language paragraph in the functional
+guide, and a matching edit in the portal before that change is considered
+done, the same way a schema change was already expected to update this
+file's own sections.
 
 **In-code comments** follow the same spirit this repo has used from the
 start (see how liberally `apps/api/src/index.ts` and every `apps/web/src/
