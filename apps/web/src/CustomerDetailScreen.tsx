@@ -68,7 +68,7 @@ const FUNDING_FIELDS: FieldDef[] = [
   { key: "ownContributionReceived", dbKey: "own_contribution_received", label: "Own contribution received", type: "number" },
 ];
 
-// Exported so NewCustomerModal.tsx's create form can offer the same
+// Exported so NewCustomerScreen.tsx's create form can offer the same
 // choices as this screen's edit form, rather than a second hardcoded copy
 // silently drifting out of sync with this one.
 export const STAGE_OPTIONS = [
@@ -159,7 +159,10 @@ function FieldRow({
   );
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+// Exported (like STAGE_OPTIONS above) so other full-page screens — e.g.
+// NewCustomerScreen.tsx — share the same "titled card of fields" look
+// instead of a second copy of this styling drifting out of sync.
+export function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, padding: "1.25rem", marginBottom: "1rem" }}>
       <div style={{ fontWeight: 700, fontSize: "0.85rem", color: "#0f172a", marginBottom: "1rem" }}>{title}</div>
@@ -551,7 +554,7 @@ function SummaryTile({ label, value, good }: { label: string; value: string; goo
 
 const fieldLabelStyle: CSSProperties = { fontSize: "0.72rem", color: "#64748b", marginBottom: "0.25rem" };
 
-const backLinkStyle: CSSProperties = {
+export const backLinkStyle: CSSProperties = {
   background: "none",
   border: "none",
   padding: 0,

@@ -1,21 +1,27 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import type { Builder, Identity } from "./types";
-import { STAGE_OPTIONS } from "./CustomerDetailScreen";
-import { overlayStyle, modalStyle, fieldLabelStyle, primaryBtnStyle, secondaryBtnStyle } from "./DataTable";
+import { STAGE_OPTIONS, Section, backLinkStyle } from "./CustomerDetailScreen";
+import { fieldLabelStyle, primaryBtnStyle, secondaryBtnStyle } from "./DataTable";
 
 const API_URL = import.meta.env.VITE_API_URL as string;
 
-// The "New" button's form. Deliberately NOT the full generic tabbed
-// record view (that's a separate, larger increment) — just the handful of
-// fields you actually need to start a customer record with. Everything
-// else is filled in afterwards via CustomerDetailScreen's edit mode, same
-// as it already works for every other field.
-export default function NewCustomerModal({
-  identity, onClose, onCreated,
+// A full page, not a popup modal — same "screen the content area swaps
+// to" pattern CustomerDetailScreen already uses (← Back link, Section
+// cards), rather than a centered overlay dialog. This used to be
+// NewCustomerModal.tsx; renamed along with the redesign since it's no
+// longer a modal in any sense.
+//
+// Deliberately NOT the full generic tabbed record view (that's a
+// separate, larger increment) — just the handful of fields you actually
+// need to start a customer record with. Everything else is filled in
+// afterwards via CustomerDetailScreen's edit mode, same as it already
+// works for every other field.
+export default function NewCustomerScreen({
+  identity, onBack, onCreated,
 }: {
   identity: Identity | null;
-  onClose: () => void;
+  onBack: () => void;
   onCreated: (id: string) => void;
 }) {
   const { getToken } = useAuth();
@@ -72,18 +78,30 @@ export default function NewCustomerModal({
   }
 
   return (
-    <div style={overlayStyle} onClick={onClose}>
-      <div style={{ ...modalStyle, width: 440 }} onClick={(e) => e.stopPropagation()}>
-        <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "#0f172a", marginBottom: "1rem" }}>New customer</div>
+    <div>
+      <button type="button" onClick={onBack} disabled={saving} style={backLinkStyle}>← Back to customers</button>
 
+      <div style={{ marginTop: "1rem", marginBottom: "1.25rem" }}>
+        <h1 style={{ fontSize: "1.3rem", fontWeight: 700, color: "#0f172a", margin: 0 }}>New customer</h1>
+        <p style={{ color: "#64748b", fontSize: "0.82rem", margin: "0.3rem 0 0" }}>
+          Fields marked <span style={{ color: "#dc2626", fontWeight: 700 }}>*</span> are required. Everything else can
+          be filled in later — from this customer's own record, the same way any existing customer is edited.
+        </p>
+      </div>
+
+      {error && (
+        <div style={{ color: "#b91c1c", background: "#fef2f2", border: "1px solid #fecaca", padding: "0.65rem 1rem", borderRadius: 8, marginBottom: "1rem", fontSize: "0.85rem" }}>
+          {error}
+        </div>
+      )}
+
+      <Section title="Identity">
         {isStaff && (
-          <div style={{ marginBottom: "0.75rem" }}>
-            <div style={fieldLabelStyle}>Builder *</div>
-            <select
-              value={form.builder_id}
-              onChange={(e) => setForm((f) => ({ ...f, builder_id: e.target.value }))}
-              style={inputStyle}
-            >
+          <div>
+            <div style={fieldLabelStyle}>
+              Builder <span style={{ color: "#dc2626" }}>*</span>
+            </div>
+            <select value={form.builder_id} onChange={(e) => setForm((f) => ({ ...f, builder_id: e.target.value }))} style={inputStyle}>
               <option value="">Select builder…</option>
               {builders.map((b) => (
                 <option key={b.id} value={b.id}>{b.name}</option>
@@ -91,29 +109,25 @@ export default function NewCustomerModal({
             </select>
           </div>
         )}
-
-        <div style={{ marginBottom: "0.75rem" }}>
-          <div style={fieldLabelStyle}>Full name *</div>
+        <div>
+          <div style={fieldLabelStyle}>
+            Full name <span style={{ color: "#dc2626" }}>*</span>
+          </div>
           <input value={form.full_name} onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))} style={inputStyle} autoFocus />
         </div>
-
-        <div style={{ marginBottom: "0.75rem" }}>
+        <div>
           <div style={fieldLabelStyle}>Agreement no.</div>
           <input value={form.agreement_no} onChange={(e) => setForm((f) => ({ ...f, agreement_no: e.target.value }))} style={inputStyle} />
         </div>
-
-        <div style={{ display: "flex", gap: "0.75rem", marginBottom: "0.75rem" }}>
-          <div style={{ flex: 1 }}>
-            <div style={fieldLabelStyle}>Phone</div>
-            <input value={form.contact_number} onChange={(e) => setForm((f) => ({ ...f, contact_number: e.target.value }))} style={inputStyle} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={fieldLabelStyle}>Email</div>
-            <input value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} style={inputStyle} />
-          </div>
+        <div>
+          <div style={fieldLabelStyle}>Phone</div>
+          <input value={form.contact_number} onChange={(e) => setForm((f) => ({ ...f, contact_number: e.target.value }))} style={inputStyle} />
         </div>
-
-        <div style={{ marginBottom: "1rem" }}>
+        <div>
+          <div style={fieldLabelStyle}>Email</div>
+          <input value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} style={inputStyle} />
+        </div>
+        <div>
           <div style={fieldLabelStyle}>Stage</div>
           <select value={form.stage} onChange={(e) => setForm((f) => ({ ...f, stage: e.target.value }))} style={inputStyle}>
             <option value="">—</option>
@@ -122,19 +136,13 @@ export default function NewCustomerModal({
             ))}
           </select>
         </div>
+      </Section>
 
-        {error && (
-          <div style={{ color: "#b91c1c", background: "#fef2f2", border: "1px solid #fecaca", padding: "0.5rem 0.75rem", borderRadius: 6, marginBottom: "0.75rem", fontSize: "0.8rem" }}>
-            {error}
-          </div>
-        )}
-
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem" }}>
-          <button type="button" onClick={onClose} disabled={saving} style={secondaryBtnStyle}>Cancel</button>
-          <button type="button" onClick={save} disabled={saving} style={primaryBtnStyle}>
-            {saving ? "Creating…" : "Create"}
-          </button>
-        </div>
+      <div style={{ display: "flex", gap: "0.5rem" }}>
+        <button type="button" onClick={onBack} disabled={saving} style={secondaryBtnStyle}>Cancel</button>
+        <button type="button" onClick={save} disabled={saving} style={primaryBtnStyle}>
+          {saving ? "Creating…" : "Create customer"}
+        </button>
       </div>
     </div>
   );

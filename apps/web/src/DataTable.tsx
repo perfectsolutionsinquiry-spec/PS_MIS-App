@@ -110,14 +110,18 @@ export default function DataTable<T>({
   const [globalQuery, setGlobalQuery] = useState("");
   const [sort, setSort] = useState<SortState | null>(null);
   const [columnFilters, setColumnFilters] = useState<Record<string, ColumnFilter>>({});
-  // Which column's filter menu is open, plus the ⋮ button's own screen
-  // position at the moment it was clicked — the menu portals to
+  // Which column's filter menu is open, plus the ⋮ button's own full
+  // screen rect at the moment it was clicked — the menu portals to
   // document.body and uses this to place itself (see ColumnFilterMenu),
   // rather than being a CSS-absolute child of the <th>. A table wrapper
   // can scroll (overflow: auto, for a wide table) and a <th> is an
   // unreliable positioning context across browsers besides — nesting the
-  // menu inside either one was clipping and misplacing it.
-  const [openFilter, setOpenFilter] = useState<{ key: string; top: number; left: number } | null>(null);
+  // menu inside either one was clipping and misplacing it. The full rect
+  // (not just top/left) is kept so the menu can flip above the button, or
+  // clamp its left edge inward, when the button is near the bottom or
+  // right edge of the screen — see ColumnFilterMenu's own positioning
+  // effect, which is where that math actually happens.
+  const [openFilter, setOpenFilter] = useState<{ key: string; anchor: { top: number; bottom: number; left: number } } | null>(null);
   const [configOpen, setConfigOpen] = useState(false);
   const [visibleKeys, setVisibleKeys] = useColumnVisibility(tableKey, columns);
 
@@ -283,7 +287,7 @@ export default function DataTable<T>({
                                 return;
                               }
                               const rect = e.currentTarget.getBoundingClientRect();
-                              setOpenFilter({ key: col.key, top: rect.bottom + 4, left: rect.left });
+                              setOpenFilter({ key: col.key, anchor: { top: rect.top, bottom: rect.bottom, left: rect.left } });
                             }}
                             title={`Search within ${col.label}`}
                             style={{
@@ -337,8 +341,7 @@ export default function DataTable<T>({
 
       {openFilter && (
         <ColumnFilterMenu
-          top={openFilter.top}
-          left={openFilter.left}
+          anchor={openFilter.anchor}
           filter={columnFilters[openFilter.key]}
           onApply={(f) => {
             setColumnFilters((cur) => ({ ...cur, [openFilter.key]: f }));
@@ -384,10 +387,9 @@ function formatCell(value: string | number | null): string {
 // wrapper scrolls (overflow: auto, for a wide table) — both were clipping
 // and misplacing this menu when it lived inline in the table.
 function ColumnFilterMenu({
-  top, left, filter, onApply, onClear, onClose,
+  anchor, filter, onApply, onClear, onClose,
 }: {
-  top: number;
-  left: number;
+  anchor: { top: number; bottom: number; left: number };
   filter: ColumnFilter | undefined;
   onApply: (f: ColumnFilter) => void;
   onClear: () => void;
@@ -396,6 +398,42 @@ function ColumnFilterMenu({
   const [operator, setOperator] = useState<ColumnFilter["operator"]>(filter?.operator ?? "contains");
   const [value, setValue] = useState(filter?.value ?? "");
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Naively placing this at { top: anchor.bottom + 4, left: anchor.left }
+  // (the previous version) put it off the right edge of the screen for
+  // any column near the right side of the table — confirmed against a
+  // real reproduction, not just reasoned about: the STAGE column (last
+  // one) put a 220px-wide menu at rect.left=332 on a 432px-wide screen,
+  // 120px past the edge. Fixed the honest way — render once to measure
+  // this menu's own actual size (which its content, not a guess, decides),
+  // then clamp left inward from the right edge and flip above the button
+  // if there's more room there than below. Starts invisible so the
+  // one-frame "wrong then corrected" position never flashes on screen.
+  const [style, setStyle] = useState<{ top: number; left: number; visible: boolean }>({
+    top: anchor.bottom + 4,
+    left: anchor.left,
+    visible: false,
+  });
+
+  useEffect(() => {
+    if (!menuRef.current) return;
+    const rect = menuRef.current.getBoundingClientRect();
+    const margin = 8;
+    let left = anchor.left;
+    if (left + rect.width > window.innerWidth - margin) {
+      left = Math.max(margin, window.innerWidth - margin - rect.width);
+    }
+    let top = anchor.bottom + 4;
+    if (top + rect.height > window.innerHeight - margin) {
+      const above = anchor.top - rect.height - 4;
+      top = above >= margin ? above : Math.max(margin, window.innerHeight - margin - rect.height);
+    }
+    setStyle({ top, left, visible: true });
+    // Deliberately runs once, on mount, against this render's actual
+    // content — the menu's own size never changes after that (its inputs
+    // don't grow/shrink the box), so there's nothing to re-measure later.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     function handlePointerDown(e: MouseEvent) {
@@ -427,8 +465,9 @@ function ColumnFilterMenu({
       ref={menuRef}
       style={{
         position: "fixed",
-        top,
-        left,
+        top: style.top,
+        left: style.left,
+        visibility: style.visible ? "visible" : "hidden",
         background: "white",
         border: "1px solid #e2e8f0",
         borderRadius: 8,

@@ -1,9 +1,7 @@
-import { useState } from "react";
-import type { Customer, Identity } from "./types";
+import type { Customer } from "./types";
 import PageHeader from "./PageHeader";
 import DataTable from "./DataTable";
 import type { ColumnDef } from "./DataTable";
-import NewCustomerModal from "./NewCustomerModal";
 
 // Purely presentational — colors a stage badge based on the exact text the
 // API sends back. Falls back to a neutral badge for any stage value not
@@ -55,16 +53,18 @@ const CUSTOMER_COLUMNS: ColumnDef<Customer>[] = [
   },
 ];
 
+// Purely a list view now — "New customer" used to open its own modal
+// state here, but that form is a full screen (NewCustomerScreen.tsx),
+// same "the content area swaps to it" pattern as opening a customer's
+// record, not a popup on top of this list. App.tsx owns which screen is
+// showing, so onNew is just handed straight through to it.
 export default function CustomersScreen({
-  customers, identity, onSelect, onCreated,
+  customers, onSelect, onNew,
 }: {
   customers: Customer[];
-  identity: Identity | null;
   onSelect: (id: string) => void;
-  onCreated: (id: string) => void;
+  onNew: () => void;
 }) {
-  const [creating, setCreating] = useState(false);
-
   return (
     <div>
       <PageHeader title="Customers" />
@@ -76,21 +76,10 @@ export default function CustomersScreen({
         getRowId={(c) => c.id}
         onRowClick={(c) => onSelect(c.id)}
         searchPlaceholder="Search name, phone, email, stage…"
-        onNew={() => setCreating(true)}
+        onNew={onNew}
         newLabel="New customer"
         emptyLabel="No customers yet."
       />
-
-      {creating && (
-        <NewCustomerModal
-          identity={identity}
-          onClose={() => setCreating(false)}
-          onCreated={(id) => {
-            setCreating(false);
-            onCreated(id);
-          }}
-        />
-      )}
     </div>
   );
 }

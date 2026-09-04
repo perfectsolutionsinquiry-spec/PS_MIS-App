@@ -3,6 +3,7 @@ import { SignedIn, SignedOut, SignIn, useAuth } from "@clerk/clerk-react";
 import Sidebar from "./Sidebar";
 import CustomersScreen from "./CustomersScreen";
 import CustomerDetailScreen from "./CustomerDetailScreen";
+import NewCustomerScreen from "./NewCustomerScreen";
 import OverviewScreen from "./OverviewScreen";
 import type { Customer, DashboardKpis, Identity, PipelineData } from "./types";
 
@@ -25,6 +26,7 @@ function Shell() {
   const [error, setError] = useState<string | null>(null);
   const [activeScreen, setActiveScreen] = useState("overview");
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [creatingCustomer, setCreatingCustomer] = useState(false);
 
   // Pulled out of the initial-load effect below so "New customer" can
   // re-run just this fetch afterwards, without re-fetching /me or
@@ -86,9 +88,10 @@ function Shell() {
         active={activeScreen}
         onNavigate={(screen) => {
           // Switching screens from the sidebar always leaves customer-detail
-          // view — otherwise clicking "Customers" again while a detail page
-          // is open would just re-render the same detail page underneath.
+          // or new-customer view — otherwise clicking "Customers" again
+          // while one of those is open would just re-render it underneath.
           setSelectedCustomerId(null);
+          setCreatingCustomer(false);
           setActiveScreen(screen);
         }}
         identity={identity}
@@ -119,23 +122,27 @@ function Shell() {
           <OverviewScreen kpis={kpis} pipeline={pipeline} />
         )}
 
-        {!error && customers !== null && kpis !== null && activeScreen === "customers" && selectedCustomerId === null && (
-          <CustomersScreen
-            customers={customers}
+        {!error && customers !== null && kpis !== null && activeScreen === "customers" && selectedCustomerId === null && !creatingCustomer && (
+          <CustomersScreen customers={customers} onSelect={setSelectedCustomerId} onNew={() => setCreatingCustomer(true)} />
+        )}
+
+        {!error && activeScreen === "customers" && creatingCustomer && (
+          <NewCustomerScreen
             identity={identity}
-            onSelect={setSelectedCustomerId}
+            onBack={() => setCreatingCustomer(false)}
             onCreated={async (id) => {
               // Refresh the list (the new row belongs in it from now on)
               // and jump straight into the record that was just created —
               // there's nothing useful to look at on the list screen
               // immediately after creating one entry.
+              setCreatingCustomer(false);
               await loadCustomers();
               setSelectedCustomerId(id);
             }}
           />
         )}
 
-        {!error && activeScreen === "customers" && selectedCustomerId !== null && (
+        {!error && activeScreen === "customers" && !creatingCustomer && selectedCustomerId !== null && (
           <CustomerDetailScreen customerId={selectedCustomerId} onBack={() => setSelectedCustomerId(null)} />
         )}
       </main>
