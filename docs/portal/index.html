@@ -374,8 +374,7 @@ const CATEGORIES = [
         <div class="table-wrap"><table>
           <tr><th>File</th><th>Renders / does</th><th>Calls</th></tr>
           <tr><td><code>main.tsx</code></td><td>Mounts the app, wraps in <code>ClerkProvider</code> (brand-font appearance), imports <code>index.css</code>.</td><td>—</td></tr>
-          <tr><td><code>App.tsx</code></td><td>Top-level shell — signed-out vs signed-in, initial fetches, screen routing plus the Customers tab state. <code>loadCustomers()</code> returns the fresh array, not just void.</td><td><code>/me</code>, <code>/customers</code>, <code>/dashboard/overview</code></td></tr>
-          <tr><td><code>TabStrip.tsx</code></td><td>The ServiceNow-style tab row — "Customers" (never closes) + one closable tab per open record + at most one "New customer" tab. No keep-alive across tabs — switching re-mounts the target screen.</td><td>—</td></tr>
+          <tr><td><code>App.tsx</code></td><td>Top-level shell — signed-out vs signed-in, initial fetches, screen routing, and the Customers list/record view switch. <code>loadCustomers()</code> returns the fresh array, not just void.</td><td><code>/me</code>, <code>/customers</code>, <code>/dashboard/overview</code></td></tr>
           <tr><td><code>Sidebar.tsx</code></td><td>Dark nav rail, brand mark, collapse toggle, Clerk's <code>&lt;UserButton/&gt;</code>.</td><td>—</td></tr>
           <tr><td><code>PageHeader.tsx</code></td><td>Shared all-caps title + 2 disabled icon buttons.</td><td>—</td></tr>
           <tr><td><code>OverviewScreen.tsx</code></td><td>6 KPI tiles + 4 chart cards. <code>KpiTile</code>, <code>ChartCard</code> reusable pieces.</td><td><code>/dashboard/daily-collection</code></td></tr>
@@ -455,15 +454,16 @@ const CATEGORIES = [
         <p>The four charts (disbursement split, loan by bank, outstanding by customer, daily collection) all have a "View as table" option and hover for exact figures.</p>
       `},
       { id: "customers-screen", title: "The Customers screen", html: `
-        <p>A live, searchable, sortable table of every customer you have access to.</p>
+        <p>A live, searchable, sortable table of every customer you have access to. The header shows the total count, and the refresh button fetches the latest customer list without reloading the rest of the application.</p>
         <ul>
           <li><strong>Sort</strong> — click any column header; click again to reverse.</li>
           <li><strong>Search within a column</strong> — the ⋮ next to a column header, Contains or Starts with.</li>
           <li><strong>Search everywhere</strong> — the box above the table searches name, phone, email, and stage at once.</li>
+          <li><strong>Advanced filters</strong> — the funnel opens field/operator/value rules. Conditions joined with <strong>and</strong> must all match the same customer; <strong>or</strong> creates an alternative condition set. The sort section supports <strong>None</strong> and compact <strong>Add Sort</strong> controls.</li>
           <li><strong>Choose which columns show, and their order</strong> — the gear icon opens a two-list picker (move columns between Hidden/Visible, and reorder the Visible list with the ↑/↓ buttons). <strong>Remembered on this browser/device only.</strong></li>
           <li><strong>New customer</strong> — a full page, not a popup: name, agreement no., phone, email, stage, plus a builder picker for staff. Required fields marked with a red *. Everything else gets filled in by opening the new customer and editing it.</li>
         </ul>
-        <p>Clicking any row opens that customer's full record <strong>in its own tab</strong> above the table — "Customers" never closes; each record opens next to it with an ✕ to close it. Open several at once and switch freely; "New customer" works the same way. Switching screens and back to Customers restores your open tabs.</p>
+        <p>Clicking any row opens that customer's full record. Use the record's Back control to return to the customer list. "New customer" is a full-page view, not a popup.</p>
       `},
       { id: "customer-record", title: "A customer's record", html: `
         <p>Opens when you click a row in the Customers table. The name, stage, and Edit/Save/Cancel buttons stay the same across all 3 tabs below — Edit always jumps to Details, the only tab with anything editable.</p>

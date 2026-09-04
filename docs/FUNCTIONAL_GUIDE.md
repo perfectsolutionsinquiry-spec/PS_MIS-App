@@ -69,6 +69,9 @@ exact figures:
 
 A live, searchable, sortable table of every customer you have access to.
 
+- **Count and refresh** — the header shows the total customers in the current
+  list. Use the refresh button to fetch the latest customer list without
+  reloading the rest of the application.
 - **Sort** — click any column header to sort by it; click again to
   reverse the order.
 - **Search within a column** — click the ⋮ next to a column header for a
@@ -87,7 +90,9 @@ A live, searchable, sortable table of every customer you have access to.
   sort field and direction. The sort section shows **None** when no sort is
   applied, and **Add Sort** adds another sort level. **Add condition set**
   creates another OR set. Nothing changes until you press **Run**; **Cancel**
-  leaves the current list unchanged.
+  leaves the current list unchanged. Conditions added with **and** must all
+  match the same customer; conditions added with **or** create an alternative
+  condition set.
   The filter window rearranges its controls for smaller screens rather than
   allowing fields or buttons to run off the edge.
 - **New customer** — opens a full page (not a popup) with a short form:
@@ -96,13 +101,9 @@ A live, searchable, sortable table of every customer you have access to.
   the record gets filled in afterwards by opening the new customer and
   editing it, same as any existing customer.
 
-Clicking any row opens that customer's full record **in its own tab**,
-above the table — a "Customers" tab is always there and never closes;
-each record you open gets its own tab next to it, with an ✕ to close it.
-Open more than one at once and switch between them freely; opening
-"New customer" works the same way, as one more tab. Switching away to
-another screen in the sidebar and back to Customers brings your open
-tabs back too — closing a tab is the only thing that actually loses it.
+Clicking any row opens that customer's full record. Use the record's Back
+control to return to the customer list. "New customer" is also a full-page
+view, not a popup.
 
 ## 5. A customer's record
 

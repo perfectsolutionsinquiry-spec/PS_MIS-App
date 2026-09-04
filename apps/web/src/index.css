@@ -41,6 +41,12 @@ body {
     grid-column: 1 / -1;
   }
 
+  .advanced-filter-condition > select,
+  .advanced-filter-condition > div {
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
   .advanced-filter-logic {
     grid-column: 1 / -1;
     justify-content: flex-start;

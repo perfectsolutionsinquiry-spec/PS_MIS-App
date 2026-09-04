@@ -5,8 +5,6 @@ import CustomersScreen from "./CustomersScreen";
 import CustomerDetailScreen from "./CustomerDetailScreen";
 import NewCustomerScreen from "./NewCustomerScreen";
 import OverviewScreen from "./OverviewScreen";
-import TabStrip from "./TabStrip";
-import type { Tab } from "./TabStrip";
 import type { Customer, DashboardKpis, Identity, PipelineData } from "./types";
 
 // This app only ever displays what the API sends back. It never decides who
@@ -28,29 +26,16 @@ function Shell() {
   const [error, setError] = useState<string | null>(null);
   const [activeScreen, setActiveScreen] = useState("overview");
 
-  // The ServiceNow-style tab strip on the Customers screen — "Customers"
-  // (the list) is always present and never closes; each customer opened
-  // gets its own closable tab (label taken straight from the already-
-  // loaded `customers` array, so it shows up instantly without waiting on
-  // a detail fetch); "New customer" is a single transient tab, opened at
-  // most once at a time. `activeView` is which one is currently showing;
-  // `customerTabs` is which customer tabs exist at all (closing one drops
-  // it from here, switching to another just changes activeView).
   type ActiveView = { kind: "list" } | { kind: "customer"; id: string } | { kind: "new-customer" };
   const [activeView, setActiveView] = useState<ActiveView>({ kind: "list" });
-  const [customerTabs, setCustomerTabs] = useState<{ id: string; label: string }[]>([]);
-  const [newCustomerTabOpen, setNewCustomerTabOpen] = useState(false);
 
-  function openCustomerTab(id: string, label: string) {
-    setCustomerTabs((tabs) => (tabs.some((t) => t.id === id) ? tabs : [...tabs, { id, label }]));
+  function openCustomerTab(id: string) {
     setActiveView({ kind: "customer", id });
   }
   function closeCustomerTab(id: string) {
-    setCustomerTabs((tabs) => tabs.filter((t) => t.id !== id));
     setActiveView((v) => (v.kind === "customer" && v.id === id ? { kind: "list" } : v));
   }
   function closeNewCustomerTab() {
-    setNewCustomerTabOpen(false);
     setActiveView((v) => (v.kind === "new-customer" ? { kind: "list" } : v));
   }
 
@@ -123,10 +108,7 @@ function Shell() {
           // Switching screens from the sidebar always lands back on the
           // Customers list, not whichever tab happened to be open —
           // otherwise clicking "Customers" again would just re-show a
-          // record or the new-customer form underneath. The open tabs
-          // themselves stay open (customerTabs/newCustomerTabOpen are
-          // untouched) so coming back to Customers restores them, same as
-          // real browser tabs surviving a switch to a different app.
+          // record or the new-customer form underneath.
           setActiveView({ kind: "list" });
           setActiveScreen(screen);
         }}
@@ -160,33 +142,14 @@ function Shell() {
 
         {!error && customers !== null && kpis !== null && activeScreen === "customers" && (
           <>
-            <TabStrip
-              tabs={[
-                { key: "list", label: "Customers" },
-                ...customerTabs.map((t): Tab => ({ key: t.id, label: t.label, closable: true })),
-                ...(newCustomerTabOpen ? [{ key: "new-customer", label: "New customer", closable: true } as Tab] : []),
-              ]}
-              active={activeView.kind === "list" ? "list" : activeView.kind === "new-customer" ? "new-customer" : activeView.id}
-              onSelect={(key) => {
-                if (key === "list") setActiveView({ kind: "list" });
-                else if (key === "new-customer") setActiveView({ kind: "new-customer" });
-                else setActiveView({ kind: "customer", id: key });
-              }}
-              onClose={(key) => {
-                if (key === "new-customer") closeNewCustomerTab();
-                else closeCustomerTab(key);
-              }}
-            />
-
             {activeView.kind === "list" && (
               <CustomersScreen
                 customers={customers}
+                onRefresh={loadCustomers}
                 onSelect={(id) => {
-                  const found = customers.find((c) => c.id === id);
-                  openCustomerTab(id, found?.full_name ?? "Customer");
+                  openCustomerTab(id);
                 }}
                 onNew={() => {
-                  setNewCustomerTabOpen(true);
                   setActiveView({ kind: "new-customer" });
                 }}
               />
@@ -207,9 +170,8 @@ function Shell() {
                   // still last render's value at this point in the
                   // function, not what was just fetched.
                   closeNewCustomerTab();
-                  const fresh = await loadCustomers();
-                  const created = fresh.find((c) => c.id === id);
-                  openCustomerTab(id, created?.full_name ?? "Customer");
+                  await loadCustomers();
+                  openCustomerTab(id);
                 }}
               />
             )}

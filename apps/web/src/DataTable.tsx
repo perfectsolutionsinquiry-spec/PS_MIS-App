@@ -164,24 +164,26 @@ export default function DataTable<T>({
     if (advancedFilter.groups.length > 0) {
       result = result.filter((row) =>
         advancedFilter.groups.some((group) =>
-          group.conditions.every((condition) => {
-            const col = columns.find((c) => c.key === condition.field);
-            if (!col) return true;
-            const raw = String(col.accessor(row) ?? "");
-            const hay = raw.toLowerCase();
-            const needle = condition.value.trim().toLowerCase();
-            switch (condition.operator) {
-              case "contains": return hay.includes(needle);
-              case "startsWith": return hay.startsWith(needle);
-              case "endsWith": return hay.endsWith(needle);
-              case "equals": return hay === needle;
-              case "notEquals": return hay !== needle;
-              case "oneOf": return condition.value.split(",").map((v) => v.trim().toLowerCase()).filter(Boolean).includes(hay);
-              case "isEmpty": return raw.trim() === "";
-              case "isNotEmpty": return raw.trim() !== "";
-              default: return false;
-            }
-          })
+          group.conditions
+            .filter((condition) => condition.operator === "isEmpty" || condition.operator === "isNotEmpty" || condition.value.trim())
+            .every((condition) => {
+              const col = columns.find((c) => c.key === condition.field);
+              if (!col) return true;
+              const raw = String(col.accessor(row) ?? "");
+              const hay = raw.toLowerCase();
+              const needle = condition.value.trim().toLowerCase();
+              switch (condition.operator) {
+                case "contains": return hay.includes(needle);
+                case "startsWith": return hay.startsWith(needle);
+                case "endsWith": return hay.endsWith(needle);
+                case "equals": return hay === needle;
+                case "notEquals": return hay !== needle;
+                case "oneOf": return condition.value.split(",").map((v) => v.trim().toLowerCase()).filter(Boolean).includes(hay);
+                case "isEmpty": return raw.trim() === "";
+                case "isNotEmpty": return raw.trim() !== "";
+                default: return false;
+              }
+            })
         )
       );
     }
@@ -529,10 +531,10 @@ function AdvancedFilterModal<T>({
                   {condition.operator === "isEmpty" || condition.operator === "isNotEmpty" ? (
                     <div style={{ ...selectStyle, color: "#94a3b8", paddingRight: "2rem" }}>No value required</div>
                   ) : (
-                    <input value={condition.value} onChange={(e) => updateCondition(group.id, condition.id, { value: e.target.value })} placeholder={condition.operator === "oneOf" ? "Value 1, Value 2" : "Value"} style={{ ...selectStyle, width: "100%" }} />
+                    <input value={condition.value} onChange={(e) => updateCondition(group.id, condition.id, { value: e.target.value })} placeholder={condition.operator === "oneOf" ? "Value 1, Value 2" : "Value"} style={{ ...selectStyle, width: "100%", boxSizing: "border-box" }} />
                   )}
                 </div>
-                <div className="advanced-filter-logic" style={{ display: "flex", gap: "0.25rem", alignItems: "center" }}>
+                <div className="advanced-filter-logic" style={{ display: "flex", gap: "0.25rem", alignItems: "center", minWidth: "max-content" }}>
                   <button type="button" onClick={addOrCondition} style={logicButtonStyle}>or</button>
                   <button type="button" onClick={() => addCondition(group.id)} style={logicButtonStyle}>and</button>
                   <button type="button" onClick={() => removeCondition(group.id, condition.id)} title="Delete condition" aria-label="Delete condition" style={deleteButtonStyle}><TrashIcon /></button>
@@ -873,7 +875,7 @@ const deleteButtonStyle: CSSProperties = { border: "none", background: "transpar
 const outlineButtonStyle: CSSProperties = { border: "1px solid #64748b", borderRadius: 5, background: "white", color: "#334155", cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, padding: "0.4rem 0.65rem" };
 const sortDirectionButtonStyle: CSSProperties = { border: "1px solid #64748b", borderRadius: 5, background: "#f8fafc", color: "#334155", cursor: "pointer", fontSize: "1rem", fontWeight: 700, width: 38, height: 32 };
 const sortRemoveButtonStyle: CSSProperties = { border: "none", background: "transparent", color: "#64748b", cursor: "pointer", fontSize: "1rem", lineHeight: 1, padding: "0.2rem" };
-const addSortButtonStyle: CSSProperties = { display: "block", width: "100%", border: "1px solid #2563eb", borderRadius: 5, background: "white", color: "#2563eb", cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, padding: "0.4rem 0.65rem", marginTop: "0.45rem" };
+const addSortButtonStyle: CSSProperties = { display: "inline-block", width: "auto", border: "1px solid #2563eb", borderRadius: 5, background: "white", color: "#2563eb", cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, padding: "0.35rem 0.65rem", marginTop: "0.45rem" };
 const textButtonStyle: CSSProperties = { border: "none", background: "transparent", color: "#2563eb", padding: "0.2rem 0", cursor: "pointer", fontSize: "0.78rem", fontWeight: 600 };
 
 export const primaryBtnStyle: CSSProperties = {
