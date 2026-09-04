@@ -443,7 +443,7 @@ const CATEGORIES = [
         <div class="table-wrap"><table>
           <tr><th>File</th><th>Renders / does</th><th>Calls</th></tr>
           <tr><td><code>main.tsx</code></td><td>Mounts the app, wraps in <code>ClerkProvider</code> (brand-font appearance), imports <code>index.css</code>.</td><td>—</td></tr>
-          <tr><td><code>App.tsx</code></td><td>Top-level shell — signed-out vs signed-in, initial fetches, URL-backed customer list/record navigation, and the Customers list/record view switch. Customer detail values load when a record opens.</td><td><code>/me</code>, <code>/customers</code>, <code>/dashboard/overview</code></td></tr>
+          <tr><td><code>App.tsx</code></td><td>Top-level shell — signed-out vs signed-in, initial fetches, URL-backed customer list/record navigation, and the Customers list/record view switch. Initial <code>/customers</code> and <code>/customers/:id</code> paths select Customers before the first render, preserving the requested screen on refresh. Customer detail values load when a record opens.</td><td><code>/me</code>, <code>/customers</code>, <code>/dashboard/overview</code></td></tr>
           <tr><td><code>Sidebar.tsx</code></td><td>Dark nav rail, brand mark, collapse toggle, Clerk's <code>&lt;UserButton/&gt;</code>.</td><td>—</td></tr>
           <tr><td><code>PageHeader.tsx</code></td><td>Shared all-caps title and actions; Customers uses it for Customer - All, count, relative refresh age, and refresh.</td><td>—</td></tr>
           <tr><td><code>OverviewScreen.tsx</code></td><td>6 KPI tiles + 4 chart cards. <code>KpiTile</code>, <code>ChartCard</code> reusable pieces.</td><td><code>/dashboard/daily-collection</code></td></tr>

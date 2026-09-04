@@ -160,7 +160,9 @@ list. "New customer" is also a full-page view, not a popup.
 Customers links can also be refreshed or opened directly in the browser. The
 frontend deployment includes a static fallback so `/customers` and
 `/customers/{id}` load the application shell instead of showing a host-level
-Not Found page.
+Not Found page. The URL selects the Customers list or the requested customer
+record before the first screen is shown, so refreshing either route keeps the
+same screen.
 
 ## 5. A customer's record
 

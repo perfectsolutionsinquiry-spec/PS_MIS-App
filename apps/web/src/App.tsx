@@ -26,7 +26,8 @@ function Shell() {
   const [pipeline, setPipeline] = useState<PipelineData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const initialCustomerId = window.location.pathname.match(/^\/customers\/([^/]+)$/)?.[1] ?? null;
-  const [activeScreen, setActiveScreen] = useState(initialCustomerId ? "customers" : "overview");
+  const initialCustomersRoute = window.location.pathname === "/customers";
+  const [activeScreen, setActiveScreen] = useState(initialCustomerId || initialCustomersRoute ? "customers" : "overview");
 
   type ActiveView = { kind: "list" } | { kind: "customer"; id: string } | { kind: "new-customer" };
   const [activeView, setActiveView] = useState<ActiveView>(initialCustomerId ? { kind: "customer", id: initialCustomerId } : { kind: "list" });
