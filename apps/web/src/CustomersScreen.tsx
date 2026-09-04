@@ -1,6 +1,4 @@
-import { useState } from "react";
 import type { Customer } from "./types";
-import PageHeader from "./PageHeader";
 import DataTable from "./DataTable";
 import type { ColumnDef } from "./DataTable";
 
@@ -60,28 +58,14 @@ const CUSTOMER_COLUMNS: ColumnDef<Customer>[] = [
 // record, not a popup on top of this list. App.tsx owns which screen is
 // showing, so onNew is just handed straight through to it.
 export default function CustomersScreen({
-  customers, onSelect, onNew, onRefresh,
+  customers, onSelect, onNew,
 }: {
   customers: Customer[];
   onSelect: (id: string) => void;
   onNew: () => void;
-  onRefresh: () => void | Promise<void>;
 }) {
-  const [refreshing, setRefreshing] = useState(false);
-
-  async function refreshCustomers() {
-    setRefreshing(true);
-    try {
-      await onRefresh();
-    } finally {
-      setRefreshing(false);
-    }
-  }
-
   return (
     <div>
-      <PageHeader title="Customers - All" count={customers.length} onRefresh={refreshCustomers} refreshing={refreshing} />
-
       <DataTable
         tableKey="customers"
         columns={CUSTOMER_COLUMNS}

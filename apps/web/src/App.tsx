@@ -146,7 +146,6 @@ function Shell() {
             {activeView.kind === "list" && (
               <CustomersScreen
                 customers={customers}
-                onRefresh={() => void loadCustomers()}
                 onSelect={(id) => {
                   openCustomerTab(id);
                 }}

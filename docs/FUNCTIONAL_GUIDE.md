@@ -69,9 +69,8 @@ exact figures:
 
 A live, searchable, sortable table of every customer you have access to.
 
-- **Count and refresh** — the header shows the total customers in the current
-  list. Use the refresh button to fetch the latest customer list without
-  reloading the rest of the application.
+- **Count** — the table controls show how many customers are in the current
+  list and how many remain after filtering.
 - **Sort** — click any column header to sort by it; click again to
   reverse the order.
 - **Search within a column** — click the ⋮ next to a column header for a
