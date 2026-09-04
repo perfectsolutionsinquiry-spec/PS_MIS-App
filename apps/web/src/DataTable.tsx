@@ -231,6 +231,7 @@ export default function DataTable<T>({
     <AriaRow
       key={getRowId(row)}
       onClick={onRowClick ? () => onRowClick(row) : undefined}
+      onAction={onRowClick ? () => onRowClick(row) : undefined}
       style={{ borderBottom: "1px solid #f1f5f9", cursor: onRowClick ? "pointer" : "default" }}
       onMouseEnter={(e) => onRowClick && (e.currentTarget.style.background = "#f8fafc")}
       onMouseLeave={(e) => onRowClick && (e.currentTarget.style.background = "transparent")}

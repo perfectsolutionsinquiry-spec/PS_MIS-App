@@ -149,7 +149,8 @@ refresh button.
 
 The first visible customer column is the accessible row header required by the
 table control. This keeps the list renderable and allows a row to open its
-customer record.
+customer record. A focused row can also be activated from the keyboard, not
+only by clicking it.
 
 Clicking any row changes the browser URL to that customer's record and fetches
 the detail values when the record opens, rather than during the initial
