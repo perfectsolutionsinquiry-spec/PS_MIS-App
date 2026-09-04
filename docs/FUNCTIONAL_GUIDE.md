@@ -82,9 +82,11 @@ A live, searchable, sortable table of every customer you have access to.
 - **Advanced filters** — the funnel icon beside the gear opens a filter
   builder. Choose a field, an operation (contains, starts with, ends with,
   is, is not, is one of, is empty, or is not empty), and a value. Add
-  multiple AND conditions inside a group, add additional OR groups, group
-  the results by a field, and choose a sort direction. Nothing changes until
-  you press **Run**; **Cancel** leaves the current list unchanged.
+  an **and** or **or** condition directly beside any statement, remove a
+  statement with the attached ×, group the results by a field, and choose a
+  sort direction. **Add condition set** creates another OR set. Nothing
+  changes until you press **Run**; **Cancel** leaves the current list
+  unchanged.
 - **New customer** — opens a full page (not a popup) with a short form:
   name, agreement no., phone, email, stage — plus, for staff only, which
   builder. Required fields are marked with a red `*`. Everything else on

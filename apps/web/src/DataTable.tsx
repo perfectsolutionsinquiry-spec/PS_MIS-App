@@ -485,6 +485,13 @@ function AdvancedFilterModal<T>({
     id: `group-${Date.now()}`,
     conditions: [{ id: `condition-${Date.now()}`, field: columns[0]?.key ?? "", operator: "contains", value: "" }],
   }]);
+  const addOrCondition = () => setGroups((current) => [
+    ...current,
+    {
+      id: `group-${Date.now()}`,
+      conditions: [{ id: `condition-${Date.now()}`, field: columns[0]?.key ?? "", operator: "contains", value: "" }],
+    },
+  ]);
   const selectStyle: CSSProperties = { padding: "0.45rem 0.5rem", border: "1px solid #cbd5e1", borderRadius: 6, background: "white", color: "#0f172a", fontSize: "0.82rem" };
   return createPortal(
     <div style={overlayStyle}>
@@ -499,7 +506,7 @@ function AdvancedFilterModal<T>({
         {groups.map((group, groupIndex) => (
           <div key={group.id} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "0.75rem", marginBottom: "0.65rem" }}>
             {group.conditions.map((condition, index) => (
-              <div key={condition.id} style={{ display: "grid", gridTemplateColumns: "1.1fr 1.1fr 1.5fr auto", gap: "0.45rem", alignItems: "center", marginBottom: index === group.conditions.length - 1 ? 0 : "0.45rem" }}>
+              <div key={condition.id} style={{ display: "grid", gridTemplateColumns: "1.1fr 1.1fr 1.5fr auto", gap: "0.45rem", alignItems: "center", marginBottom: "0.45rem" }}>
                 <select value={condition.field} onChange={(e) => updateCondition(group.id, condition.id, { field: e.target.value })} style={selectStyle}>
                   {columns.filter((column) => column.searchable !== false).map((column) => <option key={column.key} value={column.key}>{column.label}</option>)}
                 </select>
@@ -508,15 +515,24 @@ function AdvancedFilterModal<T>({
                   <option value="equals">is</option><option value="notEquals">is not</option><option value="oneOf">is one of</option>
                   <option value="isEmpty">is empty</option><option value="isNotEmpty">is not empty</option>
                 </select>
-                {condition.operator === "isEmpty" || condition.operator === "isNotEmpty" ? <div style={{ color: "#94a3b8", fontSize: "0.8rem" }}>No value required</div> : <input value={condition.value} onChange={(e) => updateCondition(group.id, condition.id, { value: e.target.value })} placeholder={condition.operator === "oneOf" ? "Value 1, Value 2" : "Value"} style={{ ...selectStyle, width: "100%" }} />}
-                <button type="button" onClick={() => removeCondition(group.id, condition.id)} title="Remove condition" style={smallButtonStyle}>×</button>
+                <div style={{ position: "relative", minWidth: 0 }}>
+                  {condition.operator === "isEmpty" || condition.operator === "isNotEmpty" ? (
+                    <div style={{ ...selectStyle, color: "#94a3b8", paddingRight: "2rem" }}>No value required</div>
+                  ) : (
+                    <input value={condition.value} onChange={(e) => updateCondition(group.id, condition.id, { value: e.target.value })} placeholder={condition.operator === "oneOf" ? "Value 1, Value 2" : "Value"} style={{ ...selectStyle, width: "100%", paddingRight: "2rem" }} />
+                  )}
+                  <button type="button" onClick={() => removeCondition(group.id, condition.id)} title="Remove condition" style={attachedRemoveButtonStyle}>×</button>
+                </div>
+                <div style={{ display: "flex", gap: "0.25rem", alignItems: "center" }}>
+                  <button type="button" onClick={addOrCondition} style={logicButtonStyle}>or</button>
+                  <button type="button" onClick={() => addCondition(group.id)} style={logicButtonStyle}>and</button>
+                </div>
               </div>
             ))}
-            <button type="button" onClick={() => addCondition(group.id)} style={textButtonStyle}>+ AND condition</button>
-            {groupIndex > 0 && <span style={{ color: "#94a3b8", fontSize: "0.75rem", marginLeft: "0.7rem" }}>OR group</span>}
+            {groupIndex > 0 && <div style={{ color: "#64748b", fontSize: "0.72rem", marginTop: "0.15rem" }}>OR condition set</div>}
           </div>
         ))}
-        <button type="button" onClick={addGroup} style={textButtonStyle}>+ OR group</button>
+        <button type="button" onClick={addGroup} style={outlineButtonStyle}>Add condition set</button>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.7rem", marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid #e2e8f0" }}>
           <label style={labelStyle}>Group rows by
             <select value={groupBy} onChange={(e) => setGroupBy(e.target.value)} style={{ ...selectStyle, width: "100%", marginTop: "0.3rem" }}>
@@ -833,6 +849,9 @@ export const fieldLabelStyle: CSSProperties = { fontSize: "0.72rem", color: "#64
 const labelStyle: CSSProperties = { display: "block", color: "#475569", fontSize: "0.78rem", fontWeight: 600 };
 const closeButtonStyle: CSSProperties = { border: "none", background: "transparent", color: "#64748b", fontSize: "1.5rem", cursor: "pointer", lineHeight: 1 };
 const smallButtonStyle: CSSProperties = { border: "1px solid #e2e8f0", borderRadius: 6, background: "white", color: "#64748b", width: 28, height: 28, cursor: "pointer", fontSize: "1rem" };
+const attachedRemoveButtonStyle: CSSProperties = { position: "absolute", right: 5, top: "50%", transform: "translateY(-50%)", border: "none", background: "transparent", color: "#64748b", cursor: "pointer", fontSize: "1rem", lineHeight: 1, padding: "0.1rem" };
+const logicButtonStyle: CSSProperties = { border: "1px solid #64748b", borderRadius: 5, background: "white", color: "#334155", cursor: "pointer", fontSize: "0.78rem", fontWeight: 600, padding: "0.36rem 0.6rem", textTransform: "lowercase" };
+const outlineButtonStyle: CSSProperties = { border: "1px solid #64748b", borderRadius: 5, background: "white", color: "#334155", cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, padding: "0.4rem 0.65rem" };
 const textButtonStyle: CSSProperties = { border: "none", background: "transparent", color: "#2563eb", padding: "0.2rem 0", cursor: "pointer", fontSize: "0.78rem", fontWeight: 600 };
 
 export const primaryBtnStyle: CSSProperties = {
