@@ -25,16 +25,22 @@ function Shell() {
   const [kpis, setKpis] = useState<DashboardKpis | null>(null);
   const [pipeline, setPipeline] = useState<PipelineData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [activeScreen, setActiveScreen] = useState("overview");
+  const initialCustomerId = window.location.pathname.match(/^\/customers\/([^/]+)$/)?.[1] ?? null;
+  const [activeScreen, setActiveScreen] = useState(initialCustomerId ? "customers" : "overview");
 
   type ActiveView = { kind: "list" } | { kind: "customer"; id: string } | { kind: "new-customer" };
-  const [activeView, setActiveView] = useState<ActiveView>({ kind: "list" });
+  const [activeView, setActiveView] = useState<ActiveView>(initialCustomerId ? { kind: "customer", id: initialCustomerId } : { kind: "list" });
 
   function openCustomerTab(id: string) {
+    window.history.pushState({}, "", `/customers/${id}`);
+    setActiveScreen("customers");
     setActiveView({ kind: "customer", id });
   }
   function closeCustomerTab(id: string) {
-    setActiveView((v) => (v.kind === "customer" && v.id === id ? { kind: "list" } : v));
+    if (activeView.kind === "customer" && activeView.id === id) {
+      window.history.pushState({}, "", "/customers");
+      setActiveView({ kind: "list" });
+    }
   }
   function closeNewCustomerTab() {
     setActiveView((v) => (v.kind === "new-customer" ? { kind: "list" } : v));
@@ -64,6 +70,16 @@ function Shell() {
     setCustomers(fresh);
     return fresh;
   }
+
+  useEffect(() => {
+    function handlePopState() {
+      const customerId = window.location.pathname.match(/^\/customers\/([^/]+)$/)?.[1] ?? null;
+      setActiveScreen(customerId || window.location.pathname === "/customers" ? "customers" : "overview");
+      setActiveView(customerId ? { kind: "customer", id: customerId } : { kind: "list" });
+    }
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -112,6 +128,7 @@ function Shell() {
           // record or the new-customer form underneath.
           setActiveView({ kind: "list" });
           setActiveScreen(screen);
+          window.history.pushState({}, "", screen === "customers" ? "/customers" : "/");
         }}
         identity={identity}
       />
@@ -141,11 +158,12 @@ function Shell() {
           <OverviewScreen kpis={kpis} pipeline={pipeline} />
         )}
 
-        {!error && customers !== null && kpis !== null && activeScreen === "customers" && (
+        {!error && customers !== null && activeScreen === "customers" && (
           <>
             {activeView.kind === "list" && (
               <CustomersScreen
                 customers={customers}
+                onRefresh={() => void loadCustomers()}
                 onSelect={(id) => {
                   openCustomerTab(id);
                 }}

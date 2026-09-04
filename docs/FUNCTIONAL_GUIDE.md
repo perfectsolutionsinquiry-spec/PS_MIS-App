@@ -67,10 +67,13 @@ exact figures:
 
 ## 4. The Customers screen
 
-A live, searchable, sortable table of every customer you have access to.
+A live, searchable, sortable table of every customer you have access to. The
+header reads **Customer - All**, shows the count, the last refresh age, and a
+refresh button.
 
-- **Count** — the table controls show how many customers are in the current
-  list and how many remain after filtering.
+- **Refresh** — use the refresh button in the header to fetch the latest
+  customer list without reloading the rest of the application; the header
+  shows how recently it was refreshed.
 - **Sort** — click any column header to sort by it; click again to
   reverse the order.
 - **Search within a column** — click the ⋮ next to a column header for a
@@ -108,9 +111,10 @@ A live, searchable, sortable table of every customer you have access to.
   buttons use consistent keyboard and assistive-technology behavior throughout
   the application. Their business meaning and workflow remain unchanged.
 
-Clicking any row opens that customer's full record. Use the record's Back
-control to return to the customer list. "New customer" is also a full-page
-view, not a popup.
+Clicking any row changes the browser URL to that customer's record and fetches
+the detail values when the record opens, rather than during the initial
+application load. Use the record's Back control to return to the customer
+list. "New customer" is also a full-page view, not a popup.
 
 ## 5. A customer's record
 

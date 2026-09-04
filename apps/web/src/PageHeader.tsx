@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Button } from "react-aria-components";
 
 // All-caps title + top-right icon buttons, used at the top of every screen
@@ -38,13 +39,23 @@ const MAIL_PATH = "M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 
 const EXPORT_PATH = "M12 3v13 M7.5 8.5L12 4l4.5 4.5 M4 21h16";
 
 export default function PageHeader({
-  title, count, onRefresh, refreshing,
+  title, count, onRefresh, refreshing, lastRefreshed,
 }: {
   title: string;
   count?: number;
   onRefresh?: () => void | Promise<void>;
   refreshing?: boolean;
+  lastRefreshed?: Date;
 }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!lastRefreshed) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 30000);
+    return () => window.clearInterval(timer);
+  }, [lastRefreshed]);
+  const ageMinutes = lastRefreshed ? Math.floor(Math.max(0, now - lastRefreshed.getTime()) / 60000) : 0;
+  const refreshLabel = ageMinutes === 0 ? "Last refreshed just now." : `Last refreshed ${ageMinutes} min ago.`;
+
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem", gap: "1rem" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "0.65rem", minWidth: 0, flexWrap: "wrap" }}>
@@ -65,7 +76,7 @@ export default function PageHeader({
             {count}
           </span>
         )}
-        {onRefresh && <span style={{ color: "#64748b", fontSize: "0.78rem" }}>{refreshing ? "Refreshing…" : "Last refreshed just now."}</span>}
+        {onRefresh && <span style={{ color: "#64748b", fontSize: "0.78rem" }}>{refreshing ? "Refreshing…" : refreshLabel}</span>}
       </div>
       <div style={{ display: "flex", gap: "0.5rem", flexShrink: 0 }}>
         {onRefresh && (
