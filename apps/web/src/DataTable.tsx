@@ -356,13 +356,14 @@ export default function DataTable<T>({
         <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, overflow: "auto" }}>
           <AriaTable aria-label="Customers" style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.87rem" }}>
             <AriaTableHeader>
-              {visibleColumns.map((col) => {
+              {visibleColumns.map((col, index) => {
                   const activeSort = advancedFilter.sort?.[0] ?? sort;
                   const isSorted = activeSort?.key === col.key;
                   const hasFilter = !!columnFilters[col.key]?.value.trim();
                   return (
                     <AriaColumn
                       key={col.key}
+                      isRowHeader={index === 0}
                       style={{
                         textAlign: "left",
                         padding: "0.65rem 1rem",

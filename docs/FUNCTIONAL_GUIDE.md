@@ -147,6 +147,10 @@ refresh button.
   buttons use consistent keyboard and assistive-technology behavior throughout
   the application. Their business meaning and workflow remain unchanged.
 
+The first visible customer column is the accessible row header required by the
+table control. This keeps the list renderable and allows a row to open its
+customer record.
+
 Clicking any row changes the browser URL to that customer's record and fetches
 the detail values when the record opens, rather than during the initial
 application load. Use the record's Back control to return to the customer
