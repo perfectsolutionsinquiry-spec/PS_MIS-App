@@ -44,6 +44,11 @@ implementing it.
       edit here. Its own top-of-file comment says the same thing; this
       is that rule, enforced.
 
+      - [ ] For Collections architecture work, the relevant item in
+            `docs/COLLECTIONS_FUTURE_PROOFING_PLAN.md` is checked only after the
+            implementation and its verification are complete. Unstarted work must
+            remain `[ ]`; deferred work must be marked `[D]` with a reason.
+
 ## 2. Visual verification — for anything that touches the UI
 
 - [ ] **Actually rendered and looked at** — a live reproduction

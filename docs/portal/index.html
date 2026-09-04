@@ -242,6 +242,56 @@ const CATEGORIES = [
       { id: "change-control", title: "Change-control rule", html: `
         <p>Implementation follows the user's exact command and stated scope. Do not guess, add, simplify, or improve behavior beyond the request. Ask permission before implementing any reasonable interpretation or enhancement.</p>
       `},
+      { id: "collections-roadmap", title: "Collections future-proofing plan", html: `
+        <p><strong>Collections is the only application being built now.</strong> The existing viewing experience must remain stable while a small reusable foundation is added for future applications.</p>
+        <h3>Strategic objective: first bounded application</h3>
+        <p>Collections is the first bounded application in the platform plan. A future shared product experience may include other applications, but that does not justify one giant schema or unrestricted access between apps. Shared platform services are reused, while each app keeps its own business rules and private data.</p>
+        <p>Scalability concerns more data, more users, more applications, and more operational load. The current experience stays stable while the server-side foundation addresses those measurable concerns.</p>
+        <h3>Evidence rule</h3>
+        <p>Add a future-proofing abstraction only for a handbook requirement, a current Collections need, a documented second-application/provider requirement, or a demonstrated production safety, isolation, financial, portability, or operational problem. Speculative framework layers remain deferred.</p>
+        <h3>What is reusable now</h3>
+        <ul>
+         <li>Tenant-aware request context</li>
+         <li>Capability-based authorization</li>
+         <li>Append-only audit events</li>
+         <li>Settings scope, export contracts, and repository boundaries</li>
+         <li>A future-compatible event/outbox seam</li>
+        </ul>
+        <h3>What is deferred</h3>
+        <p>Microservices, a second database engine, Vendor Risk screens, a visual workflow designer, arbitrary tenant scripts, universal generic records, and regional cell routing are not current delivery tasks.</p>
+        <h3>Tenant in plain language</h3>
+        <p>A tenant is one organization whose data is separated from another organization's data. Today, one builder is one tenant. A tenant is not a user, customer, project, or login.</p>
+        <h3>Approved Collections roles</h3>
+        <p>Platform Staff, Tenant Administrator, Collections Manager, Collections Operator, Finance Operator, Read-only User, and temporary reason-based Support Staff. Roles bundle exact capabilities such as <code>customers.read</code>, <code>payments.record</code>, and <code>payments.reverse</code>.</p>
+        <h3>Approved delivery phases</h3>
+        <ol>
+         <li>Protect the existing experience.</li>
+         <li>Define Collections capabilities and roles.</li>
+         <li>Add tenant-aware request context.</li>
+         <li>Add audit-event foundations.</li>
+         <li>Strengthen payment idempotency, corrections, and reversals.</li>
+         <li>Extract Collections services from route code.</li>
+         <li>Add server-side cursor pagination.</li>
+         <li>Add tenant export.</li>
+         <li>Strengthen authorization, migration, financial, and isolation tests.</li>
+        </ol>
+        <p>The complete checkable plan is maintained in <code>docs/COLLECTIONS_FUTURE_PROOFING_PLAN.md</code>.</p>
+      `},
+      { id: "provider-multi-app", title: "Provider and multi-application boundaries", html: `
+        <h3>Current providers are replaceable adapters</h3>
+        <p>Clerk handles identity, Neon/PostgreSQL handles relational storage and RLS, and Render handles deployment. They remain in place because they work today, but new business services must use internal interfaces rather than provider SDK types. This allows a future provider migration without rewriting Collections or every future application.</p>
+        <p>We do not add a second provider just to prove portability. A versioned tenant export and small adapters are the practical foundation; conformance tests and actual replacement work happen when a real migration or procurement need exists.</p>
+        <h3>Collections is the first bounded application</h3>
+        <p>The shared platform layer will eventually provide identity links, tenant memberships, capabilities, audit, settings, exports, file metadata, workflow contracts, events, correlation, and telemetry. Collections owns customers, projects, units, milestones, payments, loans, and its reports.</p>
+        <h3>Rules for future applications</h3>
+        <ol>
+          <li>Give the application its own manifest, installation rules, schema namespace, migrations, routes, services, and repositories.</li>
+          <li>Reuse the platform layer instead of copying identity, authorization, audit, or export logic.</li>
+          <li>Do not directly mutate Collections-private tables.</li>
+          <li>Prove tenant isolation with tests.</li>
+        </ol>
+        <p>The scaling path is a modular monolith first. Separate services or regional cells come only when measurements justify them.</p>
+      `},
       { id: "architecture", title: "Architecture at a glance", html: `
         <p>The one rule everything else follows: <strong>the API decides, the frontend displays.</strong> No business number is computed in <code>apps/web</code>, and no access decision is made there either — every route re-derives who's asking from the verified Clerk token, never from anything the client claims.</p>
         <pre class="mermaid">flowchart LR
@@ -305,6 +355,9 @@ const CATEGORIES = [
         <h3>Row-level security, in one paragraph</h3>
         <p>Every RLS table has one policy: <code>is_staff OR builder_id = current_builder_id</code>, <strong>forced</strong> (binds even to the table's owning DB role). The API sets <code>app.is_staff</code> / <code>app.current_builder_id</code> per request from the verified Clerk identity — never from the client. <code>builder_users</code> has RLS off on purpose: the query that discovers which builder a login belongs to must run before any tenant context exists.</p>
         <div class="callout"><strong>Deliberately not in the schema:</strong> spreadsheet formula/derived columns (Basic Value formula, Agreement Value formula, per-stage percentages). Those belong in a future <code>packages/calc-engine</code>, computed from the raw inputs — storing the same fact twice is the bug class this avoids.</div>
+        <h3>Why these tables exist</h3>
+        <p>The current schema is intentionally Collections-owned and close to the imported MIS workbook. Tenant ownership is direct where RLS needs it; raw facts are stored instead of duplicated spreadsheet-derived values; customer milestones represent what is owed, while recovery transactions represent what was received. Posted financial history is preserved.</p>
+        <p>Existing <code>builder_id</code> columns remain during a tested compatibility migration toward a future tenant-neutral model. Future applications must not directly mutate Collections-private tables. A later Collections v2 may separate party, account, booking, agreement, obligation, receipt, allocation, adjustment, and loan-case concepts, but that decomposition is deliberately deferred until expand-contract migrations and reconciliation can protect the live experience.</p>
       `},
       { id: "flows", title: "How data actually flows", html: `
         <h3>Login → identity → tenant-scoped query</h3>

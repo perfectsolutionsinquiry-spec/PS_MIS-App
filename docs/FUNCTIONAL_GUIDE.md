@@ -17,6 +17,34 @@ button gets a line here in the same commit that ships it — this is the
 document that answers "how do I..." and "what does that do," and it goes
 stale the moment a screen changes without it.
 
+## Approved Collections roadmap
+
+Collections is the current product. The approved future-proofing work keeps
+the existing screens and viewing experience unchanged while adding safer
+foundations behind them: clear Collections roles, tenant-aware access,
+audited sensitive actions, safe payment corrections, scalable server-side
+lists, tenant exports, and stronger tests. A tenant means one organization
+whose data is separated from another organization's data; today a tenant is
+one builder.
+
+The detailed, checkable implementation plan is in
+`docs/COLLECTIONS_FUTURE_PROOFING_PLAN.md`. It also explains which future
+platform ideas are deliberately deferred, so a future developer does not
+mistake a planned capability for something already available.
+
+### Why this matters for future applications
+
+Collections is the first bounded application in the platform plan. A future
+shared product experience may include other applications, while each
+application still keeps its own data and permissions. This does not change how
+the current Customers screen works.
+
+The foundation is being prepared so growth in customers, users, payments, or
+future applications does not require rebuilding the current product. Data
+separation, role permissions, payment history, audit records, exports, and
+application boundaries are therefore product safety features, not only
+technical details. Ideas without a current requirement remain deferred.
+
 ---
 
 ## 1. What this platform is

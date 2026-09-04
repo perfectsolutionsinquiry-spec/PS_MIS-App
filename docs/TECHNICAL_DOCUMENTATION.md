@@ -7,6 +7,12 @@ must not guess, add, simplify, or improve behavior beyond that request. Any
 reasonable interpretation or proposed enhancement requires user permission
 before code changes are made.
 
+The approved Collections implementation and future-proofing checklist is in
+[`docs/COLLECTIONS_FUTURE_PROOFING_PLAN.md`](./COLLECTIONS_FUTURE_PROOFING_PLAN.md).
+Read it before adding roles, tenant context, audit, payment corrections,
+exports, or new application boundaries. It separates work required now from
+future platform capabilities that are deliberately deferred.
+
 **Audience:** whoever is fixing a bug or building the next feature — Azhar,
 a future developer, or a future Claude Code session with no memory of how
 this was built. `CLAUDE.md` at the repo root tells the *story* (how we got
@@ -20,6 +26,54 @@ in the file-by-file index. A documentation update that lags the code it
 describes is worse than no documentation, because it actively misleads
 whoever reads it next. See `docs/FUNCTIONAL_GUIDE.md` for the same rule
 applied to the user-facing/business doc.
+
+---
+
+## 0. Approved Collections delivery strategy
+
+Collections is the only application being built now. The reusable foundation
+is intentionally small: tenant-aware request context, capability-based
+authorization, audit events, settings scope, export contracts, repository
+boundaries, and a future-compatible event seam. Future applications must not
+require a rewrite of those foundations, but Collections business behavior
+must remain unchanged while they are introduced.
+
+The implementation checklist, role definitions, phase gates, deferred work,
+and completion criteria live in
+[`COLLECTIONS_FUTURE_PROOFING_PLAN.md`](./COLLECTIONS_FUTURE_PROOFING_PLAN.md).
+
+The current database continues to use `builder_id`; new platform-level code
+must not assume that a builder is the only possible tenant. A gradual
+compatibility migration is required before any universal `tenant_id` change.
+
+### 0.1 Strategic scalability objective
+
+Collections is the first bounded application in the platform architecture
+described by the handbook. A future shared product experience may contain
+multiple applications, but this does not justify a giant schema or unrestricted
+cross-application access. The foundation must address data, user, application,
+and operational scale while keeping the current Collections experience stable.
+
+Required properties are:
+
+- reusable platform services with application-owned business rules and data;
+- tenant scope in requests, authorization, RLS, jobs, exports, files, search,
+  and telemetry;
+- contracts before separate deployables;
+- independent scaling only for measured bottlenecks;
+- provider adapters and canonical exports for portability;
+- financial correctness under retries, concurrency, and asynchronous work;
+- generic abstractions only for real shared use cases.
+
+The approved maturity path is modular monolith, platform kernel,
+multi-application monolith, selective extraction, then regional/provider
+scale. The complete guardrails and second-application readiness test are in
+[`COLLECTIONS_FUTURE_PROOFING_PLAN.md`](./COLLECTIONS_FUTURE_PROOFING_PLAN.md).
+
+Future-proofing changes require a concrete current requirement, a handbook
+requirement, a second-application/provider requirement, or evidence from a
+production safety, isolation, financial, portability, or operational issue.
+Speculative abstractions are deferred.
 
 ---
 
@@ -124,6 +178,61 @@ erDiagram
 | `customer_milestones` | One row per customer per milestone — generated from `payment_milestones`, tracks `amount_due` / `due_date` / `status`. | Yes |
 | `recovery_transactions` | The actual payment ledger — every rupee received, one row per payment. Source of truth for "amount received." Insert-only (§4, `POST /customers/:id/payments`). | Yes |
 | `app_settings` | *(`0004_settings_and_soft_delete.sql`)* Generic key/value platform config — starting with `customer_highlight_fields`, which fields show at the top of a customer record. | No — app-wide UI config, not tenant data |
+
+### 2.2.1 Schema rationale and future direction
+
+The current tables are deliberately Collections-owned and close to the
+imported MIS workbook so the present application remains understandable and
+safe. They are not presented as the final schema for every future application.
+The rationale, ownership boundary, and planned evolution of every table are
+recorded in
+[`COLLECTIONS_FUTURE_PROOFING_PLAN.md`](./COLLECTIONS_FUTURE_PROOFING_PLAN.md).
+
+The important rules are:
+
+- tenant ownership is direct on tenant-scoped rows where reliable RLS needs
+  it;
+- raw facts are stored instead of duplicated spreadsheet-derived values;
+- `customer_milestones` represents what is owed, while
+  `recovery_transactions` represents what was received;
+- posted financial history is preserved rather than overwritten;
+- shared reference data is separate from tenant-owned operational data;
+- existing `builder_id` columns remain during a tested compatibility migration
+  toward a future tenant-neutral platform model;
+- future applications must not directly join to or mutate Collections-private
+  tables without an explicit contract.
+
+The future platform model may later separate party, customer account, booking,
+agreement, unit, obligation, receipt, allocation, adjustment, and loan-case
+concepts. That decomposition is intentionally deferred until expand-contract
+migrations, reconciliation, and access tests can protect the live Collections
+experience.
+
+### 2.2.2 Provider and multi-application boundaries
+
+Clerk, Neon/PostgreSQL, and Render are the current providers, not business
+domain contracts. They remain in place now because they are working production
+choices. New application services must use internal identity, tenant context,
+repository, unit-of-work, storage, event, and telemetry interfaces rather than
+provider SDK types.
+
+This creates practical replaceability: a future Clerk, PostgreSQL hosting
+provider, or deployment platform can be introduced by replacing an adapter and
+running a documented migration. It does not claim that a provider migration
+is free or that a second provider is needed today.
+
+Collections is the first bounded application. The reusable platform layer
+should own identity links, tenant memberships, capabilities, audit, settings,
+exports, file metadata, workflow contracts, event envelopes, correlation, and
+telemetry. Collections owns customers, projects, units, milestones, payments,
+loans, and its reports. A future application gets its own manifest, tenant
+installation rules, schema namespace, migrations, routes, services, and
+repositories. It must not directly mutate Collections-private tables.
+
+The recommended scaling path is a modular monolith first. Logical boundaries
+are established before separate deployables, services, or regional cells are
+introduced. This keeps current delivery simple while allowing future apps or
+high-load workers to scale independently when measurements justify it.
 
 `customers` also gained `is_active boolean not null default true` in the
 same migration — the soft-delete field: Delete never removes a row, it
