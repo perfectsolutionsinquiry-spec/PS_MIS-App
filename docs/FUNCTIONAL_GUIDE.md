@@ -157,6 +157,11 @@ the detail values when the record opens, rather than during the initial
 application load. Use the record's Back control to return to the customer
 list. "New customer" is also a full-page view, not a popup.
 
+Customers links can also be refreshed or opened directly in the browser. The
+frontend deployment includes a static fallback so `/customers` and
+`/customers/{id}` load the application shell instead of showing a host-level
+Not Found page.
+
 ## 5. A customer's record
 
 Opens when you click a row in the Customers table. The name, client no.,

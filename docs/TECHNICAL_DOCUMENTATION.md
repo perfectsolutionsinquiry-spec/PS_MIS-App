@@ -460,6 +460,7 @@ it talks to.
 | File | Renders / does | Calls |
 |---|---|---|
 | `main.tsx` | Mounts the app, wraps it in `ClerkProvider` (with the brand-font `appearance` prop), imports `index.css`. | — |
+| `vite.config.ts` | Builds the Vite frontend and copies the generated `index.html` to `dist/404.html`, allowing direct refreshes of client-side routes on the Render static host. | — |
 | `index.css` | The one global CSS file in an otherwise fully-inline-styled app — loads IBM Plex Sans, sets it as the `body` default, and provides responsive breakpoints for the inline advanced filter panel and field personalizer so controls reflow on narrow screens. | — |
 | `theme.ts` | Single source of truth for the Perfect Solutions brand colour tokens used by new and shared UI styles. | — |
 | `AriaControls.tsx` | Shared React Aria Components wrappers for text fields, textareas, selects, checkboxes, and data tables. These preserve the application's existing visual styles while standardizing accessible interaction behavior. | — |

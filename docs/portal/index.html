@@ -451,6 +451,7 @@ const CATEGORIES = [
           <tr><td><code>CustomersScreen.tsx</code></td><td>Purely a list view — supplies <code>CUSTOMER_COLUMNS</code> to <code>DataTable</code>; "New" is handed to <code>App.tsx</code>, which owns which screen shows.</td><td>—</td></tr>
           <tr><td><code>AriaControls.tsx</code></td><td>Shared React Aria Components wrappers for text fields, textareas, selects, checkboxes, and data tables, preserving the application's existing styles.</td><td>—</td></tr>
           <tr><td><code>DataTable.tsx</code></td><td><strong>The generic list engine</strong> — React Aria Table primitives plus a compact expandable magnifier search, sort, per-column filter, inline advanced funnel builder, condition sets, richer operators, grouping, multi-level sort rows with direction toggles, searchable field personalizer, and New button. The filter panel and field personalizer reflow for narrow screens; all filtering operates client-side on already authorized rows. Every future table screen plugs into this.</td><td>—</td></tr>
+          <tr><td><code>vite.config.ts</code></td><td>Builds the frontend and creates <code>dist/404.html</code> from the generated application shell so direct refreshes of client-side routes load React.</td><td>—</td></tr>
           <tr><td><code>NewCustomerScreen.tsx</code></td><td>The "New" button's form — a full page, not a modal.</td><td><code>/builders</code> (staff), <code>POST /customers</code></td></tr>
           <tr><td><code>CustomerDetailScreen.tsx</code></td><td>The record, in 3 tabs: <strong>Overview</strong> (summary tiles, milestone progress, recent payments), <strong>Details</strong> (5 edit sections), <strong>Related records</strong> (co-applicants, record-a-payment, 2 tables). Edit/Save/Cancel are global to the record, not per-tab.</td><td><code>GET /customers/:id</code>, <code>/banks</code>, <code>PATCH</code>, <code>POST /payments</code></td></tr>
           <tr><td><code>types.ts</code></td><td>Every shared type, matching the API's response shapes exactly.</td><td>—</td></tr>
@@ -466,6 +467,7 @@ const CATEGORIES = [
           <tr><td>A field won't save on the customer detail page</td><td><code>EDITABLE_CUSTOMER_FIELDS</code> in <code>apps/api/src/index.ts</code> — the field must be on this allowlist</td></tr>
           <tr><td>A new column/table's data isn't showing up</td><td>Check RLS is enabled+forced, and that a frontend type/column was actually added</td></tr>
           <tr><td>Frontend changes aren't showing up after a push</td><td>Render's static-site build can take several minutes, plus Cloudflare's edge cache (<code>s-maxage=300</code>) — cache-bust with <code>?cb=</code> before assuming it's stuck</td></tr>
+          <tr><td>Refreshing <code>/customers</code> shows Not Found</td><td><code>apps/web/vite.config.ts</code> creates the static <code>404.html</code> SPA fallback; redeploy the frontend and cache-bust the URL</td></tr>
           <tr><td>A <code>VITE_</code>-prefixed env var change isn't taking effect</td><td>Baked in at build time — trigger a manual redeploy, verify by the bundle's actual content</td></tr>
         </table></div>
       `},
