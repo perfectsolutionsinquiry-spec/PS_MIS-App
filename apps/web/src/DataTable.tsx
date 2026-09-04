@@ -213,6 +213,21 @@ export default function DataTable<T>({
         return groups;
       }, {})
     : null;
+  const renderDataRow = (row: T) => (
+    <tr
+      key={getRowId(row)}
+      onClick={onRowClick ? () => onRowClick(row) : undefined}
+      style={{ borderBottom: "1px solid #f1f5f9", cursor: onRowClick ? "pointer" : "default" }}
+      onMouseEnter={(e) => onRowClick && (e.currentTarget.style.background = "#f8fafc")}
+      onMouseLeave={(e) => onRowClick && (e.currentTarget.style.background = "transparent")}
+    >
+      {visibleColumns.map((col) => (
+        <td key={col.key} style={{ padding: "0.65rem 1rem", color: "#475569" }}>
+          {col.render ? col.render(row) : formatCell(col.accessor(row))}
+        </td>
+      ))}
+    </tr>
+  );
 
   return (
     <div>
@@ -369,42 +384,16 @@ export default function DataTable<T>({
                   </td>
                 </tr>
               ) : (
-                (groupedRows ? Object.entries(groupedRows).flatMap(([groupLabel, groupRows]) => [
-                  <tr key={`group-${groupLabel}`} style={{ background: "#eff6ff" }}>
-                    <td colSpan={visibleColumns.length} style={{ padding: "0.55rem 1rem", color: "#1d4ed8", fontWeight: 700, fontSize: "0.78rem" }}>
-                      {columns.find((c) => c.key === advancedFilter.groupBy)?.label}: {groupLabel} <span style={{ fontWeight: 500 }}>({groupRows.length})</span>
-                    </td>
-                  </tr>,
-                  ...groupRows.map((row) => (
-                  <tr
-                    key={getRowId(row)}
-                    onClick={onRowClick ? () => onRowClick(row) : undefined}
-                    style={{ borderBottom: "1px solid #f1f5f9", cursor: onRowClick ? "pointer" : "default" }}
-                    onMouseEnter={(e) => onRowClick && (e.currentTarget.style.background = "#f8fafc")}
-                    onMouseLeave={(e) => onRowClick && (e.currentTarget.style.background = "transparent")}
-                  >
-                    {visibleColumns.map((col) => (
-                      <td key={col.key} style={{ padding: "0.65rem 1rem", color: "#475569" }}>
-                        {col.render ? col.render(row) : formatCell(col.accessor(row))}
-                      </td>
-                    ))}
-                  </tr>
-                  )),
-                ])) : filtered.map((row) => (
-                  <tr
-                    key={getRowId(row)}
-                    onClick={onRowClick ? () => onRowClick(row) : undefined}
-                    style={{ borderBottom: "1px solid #f1f5f9", cursor: onRowClick ? "pointer" : "default" }}
-                    onMouseEnter={(e) => onRowClick && (e.currentTarget.style.background = "#f8fafc")}
-                    onMouseLeave={(e) => onRowClick && (e.currentTarget.style.background = "transparent")}
-                  >
-                    {visibleColumns.map((col) => (
-                      <td key={col.key} style={{ padding: "0.65rem 1rem", color: "#475569" }}>
-                        {col.render ? col.render(row) : formatCell(col.accessor(row))}
-                      </td>
-                    ))}
-                  </tr>
-                ))
+                groupedRows
+                  ? Object.entries(groupedRows).flatMap(([groupLabel, groupRows]) => [
+                      <tr key={`group-${groupLabel}`} style={{ background: "#eff6ff" }}>
+                        <td colSpan={visibleColumns.length} style={{ padding: "0.55rem 1rem", color: "#1d4ed8", fontWeight: 700, fontSize: "0.78rem" }}>
+                          {columns.find((c) => c.key === advancedFilter.groupBy)?.label}: {groupLabel} <span style={{ fontWeight: 500 }}>({groupRows.length})</span>
+                        </td>
+                      </tr>,
+                      ...groupRows.map(renderDataRow),
+                    ])
+                  : filtered.map(renderDataRow)
               )}
             </tbody>
           </table>
