@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "react-aria-components";
+import { AriaCheckbox, AriaSelect, AriaTextField } from "./AriaControls";
 import type { CSSProperties, ReactNode } from "react";
 
 // A generic, config-driven list view — sortable columns, a per-column
@@ -259,10 +260,11 @@ export default function DataTable<T>({
 
         <div style={{ display: "flex", gap: "0.6rem", alignItems: "center" }}>
           {rows.length > 0 && (
-            <input
+            <AriaTextField
               value={globalQuery}
-              onChange={(e) => setGlobalQuery(e.target.value)}
+              onChange={setGlobalQuery}
               placeholder={searchPlaceholder}
+              aria-label={searchPlaceholder}
               style={{
                 padding: "0.5rem 0.85rem",
                 borderRadius: 8,
@@ -520,19 +522,17 @@ function AdvancedFilterModal<T>({
           <div key={group.id} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "0.75rem", marginBottom: "0.65rem" }}>
             {group.conditions.map((condition, index) => (
               <div key={condition.id} className="advanced-filter-condition" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(0, 1.5fr) max-content", gap: "0.45rem", alignItems: "center", marginBottom: "0.45rem" }}>
-                <select value={condition.field} onChange={(e) => updateCondition(group.id, condition.id, { field: e.target.value })} style={selectStyle}>
-                  {columns.filter((column) => column.searchable !== false).map((column) => <option key={column.key} value={column.key}>{column.label}</option>)}
-                </select>
-                <select value={condition.operator} onChange={(e) => updateCondition(group.id, condition.id, { operator: e.target.value as AdvancedOperator })} style={selectStyle}>
-                  <option value="contains">contains</option><option value="startsWith">starts with</option><option value="endsWith">ends with</option>
-                  <option value="equals">is</option><option value="notEquals">is not</option><option value="oneOf">is one of</option>
-                  <option value="isEmpty">is empty</option><option value="isNotEmpty">is not empty</option>
-                </select>
+                <AriaSelect value={condition.field} onChange={(value) => updateCondition(group.id, condition.id, { field: value })} style={selectStyle} ariaLabel="Filter field" options={columns.filter((column) => column.searchable !== false).map((column) => ({ value: column.key, label: column.label }))} />
+                <AriaSelect value={condition.operator} onChange={(value) => updateCondition(group.id, condition.id, { operator: value as AdvancedOperator })} style={selectStyle} ariaLabel="Filter operator" options={[
+                  { value: "contains", label: "contains" }, { value: "startsWith", label: "starts with" }, { value: "endsWith", label: "ends with" },
+                  { value: "equals", label: "is" }, { value: "notEquals", label: "is not" }, { value: "oneOf", label: "is one of" },
+                  { value: "isEmpty", label: "is empty" }, { value: "isNotEmpty", label: "is not empty" },
+                ]} />
                 <div style={{ position: "relative", minWidth: 0 }}>
                   {condition.operator === "isEmpty" || condition.operator === "isNotEmpty" ? (
                     <div style={{ ...selectStyle, color: "#94a3b8", paddingRight: "2rem" }}>No value required</div>
                   ) : (
-                    <input value={condition.value} onChange={(e) => updateCondition(group.id, condition.id, { value: e.target.value })} placeholder={condition.operator === "oneOf" ? "Value 1, Value 2" : "Value"} style={{ ...selectStyle, width: "100%", boxSizing: "border-box" }} />
+                    <AriaTextField value={condition.value} onChange={(value) => updateCondition(group.id, condition.id, { value })} placeholder={condition.operator === "oneOf" ? "Value 1, Value 2" : "Value"} aria-label="Filter value" style={{ ...selectStyle, width: "100%", boxSizing: "border-box" }} />
                   )}
                 </div>
                 <div className="advanced-filter-logic" style={{ display: "flex", gap: "0.25rem", alignItems: "center", minWidth: "max-content" }}>
@@ -548,16 +548,12 @@ function AdvancedFilterModal<T>({
         <Button type="button" onClick={addGroup} style={outlineButtonStyle}>Add condition set</Button>
         <div className="advanced-filter-options" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: "0.7rem", marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid #e2e8f0" }}>
           <label style={labelStyle}>Group rows by
-            <select value={groupBy} onChange={(e) => setGroupBy(e.target.value)} style={{ ...selectStyle, width: "100%", marginTop: "0.3rem" }}>
-              <option value="">No grouping</option>{columns.map((column) => <option key={column.key} value={column.key}>{column.label}</option>)}
-            </select>
+            <AriaSelect value={groupBy} onChange={setGroupBy} style={{ ...selectStyle, width: "100%", marginTop: "0.3rem" }} ariaLabel="Group rows by" placeholder="No grouping" options={columns.map((column) => ({ value: column.key, label: column.label }))} />
           </label>
           <div style={labelStyle}>Sort by
             {sorts.map((sort, index) => (
               <div key={`${sort.key}-${index}`} className="advanced-filter-sort-row" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto auto", gap: "0.4rem", marginTop: "0.3rem", alignItems: "center" }}>
-                <select value={sort.key} onChange={(e) => setSorts((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, key: e.target.value } : item))} style={{ ...selectStyle, width: "100%" }}>
-                  {columns.map((column) => <option key={column.key} value={column.key}>{column.label}</option>)}
-                </select>
+                <AriaSelect value={sort.key} onChange={(value) => setSorts((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, key: value } : item))} style={{ ...selectStyle, width: "100%" }} ariaLabel="Sort field" options={columns.map((column) => ({ value: column.key, label: column.label }))} />
                 <Button type="button" title={sort.dir === "asc" ? "Sort ascending" : "Sort descending"} onClick={() => setSorts((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, dir: item.dir === "asc" ? "desc" : "asc" } : item))} style={sortDirectionButtonStyle}>
                   {sort.dir === "asc" ? "↑" : "↓"}
                 </Button>
@@ -678,20 +674,14 @@ function ColumnFilterMenu({
         <span style={{ fontSize: "0.75rem", fontWeight: 600 }}>Filter</span>
         <Button type="button" onClick={onClose} style={{ border: "none", background: "none", cursor: "pointer", color: "#94a3b8" }}>✕</Button>
       </div>
-      <select
-        value={operator}
-        onChange={(e) => setOperator(e.target.value as ColumnFilter["operator"])}
-        style={{ width: "100%", fontSize: "0.8rem", padding: "0.35rem 0.5rem", borderRadius: 6, border: "1px solid #e2e8f0", marginBottom: "0.5rem" }}
-      >
-        <option value="contains">Contains</option>
-        <option value="startsWith">Starts with</option>
-      </select>
-      <input
+      <AriaSelect value={operator} onChange={(value) => setOperator(value as ColumnFilter["operator"])} style={{ width: "100%", fontSize: "0.8rem", padding: "0.35rem 0.5rem", borderRadius: 6, border: "1px solid #e2e8f0", marginBottom: "0.5rem" }} ariaLabel="Column filter operator" options={[{ value: "contains", label: "Contains" }, { value: "startsWith", label: "Starts with" }]} />
+      <AriaTextField
         autoFocus
         value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && onApply({ operator, value })}
+        onChange={setValue}
+        onKeyDown={(event) => event.key === "Enter" && onApply({ operator, value })}
         placeholder="Value…"
+        aria-label="Column filter value"
         style={{ width: "100%", fontSize: "0.8rem", padding: "0.35rem 0.5rem", borderRadius: 6, border: "1px solid #e2e8f0", marginBottom: "0.6rem" }}
       />
       <div style={{ display: "flex", gap: "0.4rem" }}>
@@ -761,14 +751,11 @@ function ColumnConfigModal<T>({
             <div style={{ border: "1px solid #cbd5e1", borderRadius: 6, overflow: "hidden" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.45rem", padding: "0.55rem 0.65rem", borderBottom: "1px solid #cbd5e1", color: "#64748b" }}>
                 <span aria-hidden="true">⌕</span>
-                <input value={availableQuery} onChange={(e) => setAvailableQuery(e.target.value)} placeholder="Search" aria-label="Search available columns" style={{ border: "none", outline: "none", width: "100%", fontSize: "0.85rem" }} />
+                <AriaTextField value={availableQuery} onChange={setAvailableQuery} placeholder="Search" aria-label="Search available columns" style={{ border: "none", outline: "none", width: "100%", fontSize: "0.85rem" }} />
               </div>
               <div style={{ height: 260, overflowY: "auto", padding: "0.25rem 0.45rem" }}>
                 {available.map((key) => (
-                  <label key={key} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.45rem 0.2rem", fontSize: "0.86rem", color: "#334155", cursor: "pointer" }}>
-                    <input type="checkbox" checked={false} onChange={() => toggleColumn(key)} />
-                    <span>{labelFor(key)}</span>
-                  </label>
+                  <AriaCheckbox key={key} isSelected={false} onChange={() => toggleColumn(key)}>{labelFor(key)}</AriaCheckbox>
                 ))}
                 {available.length === 0 && <div style={{ padding: "1rem 0.4rem", color: "#94a3b8", fontSize: "0.8rem" }}>No available columns</div>}
               </div>

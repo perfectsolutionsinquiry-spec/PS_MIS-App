@@ -61,6 +61,11 @@ up).
       `react-aria-components` rather than native `<button>` elements or
       another button library. Keep behavior and styling explicit through
       React Aria props and existing component styles.
+- [ ] **Supported form controls use React Aria** — use React Aria Components
+      for text fields, textareas, selects, checkboxes, and other supported
+      interactive controls. Keep semantic tables, SVG charts, layout
+      containers, and third-party authentication widgets when React Aria does
+      not provide an equivalent.
 
 ## 3. Deploy verification — after pushing
 

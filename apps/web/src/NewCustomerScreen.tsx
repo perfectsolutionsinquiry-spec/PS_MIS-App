@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "react-aria-components";
+import { AriaSelect, AriaTextField } from "./AriaControls";
 import { useAuth } from "@clerk/clerk-react";
 import type { Builder, Identity } from "./types";
 import { STAGE_OPTIONS, Section, backLinkStyle } from "./CustomerDetailScreen";
@@ -102,40 +103,30 @@ export default function NewCustomerScreen({
             <div style={fieldLabelStyle}>
               Builder <span style={{ color: "#dc2626" }}>*</span>
             </div>
-            <select value={form.builder_id} onChange={(e) => setForm((f) => ({ ...f, builder_id: e.target.value }))} style={inputStyle}>
-              <option value="">Select builder…</option>
-              {builders.map((b) => (
-                <option key={b.id} value={b.id}>{b.name}</option>
-              ))}
-            </select>
+            <AriaSelect value={form.builder_id} onChange={(value) => setForm((f) => ({ ...f, builder_id: value }))} ariaLabel="Builder" placeholder="Select builder…" style={inputStyle} options={builders.map((b) => ({ value: b.id, label: b.name }))} />
           </div>
         )}
         <div>
           <div style={fieldLabelStyle}>
             Full name <span style={{ color: "#dc2626" }}>*</span>
           </div>
-          <input value={form.full_name} onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))} style={inputStyle} autoFocus />
+          <AriaTextField value={form.full_name} onChange={(value) => setForm((f) => ({ ...f, full_name: value }))} style={inputStyle} autoFocus aria-label="Full name" />
         </div>
         <div>
           <div style={fieldLabelStyle}>Agreement no.</div>
-          <input value={form.agreement_no} onChange={(e) => setForm((f) => ({ ...f, agreement_no: e.target.value }))} style={inputStyle} />
+          <AriaTextField value={form.agreement_no} onChange={(value) => setForm((f) => ({ ...f, agreement_no: value }))} style={inputStyle} aria-label="Agreement number" />
         </div>
         <div>
           <div style={fieldLabelStyle}>Phone</div>
-          <input value={form.contact_number} onChange={(e) => setForm((f) => ({ ...f, contact_number: e.target.value }))} style={inputStyle} />
+          <AriaTextField value={form.contact_number} onChange={(value) => setForm((f) => ({ ...f, contact_number: value }))} style={inputStyle} aria-label="Phone" />
         </div>
         <div>
           <div style={fieldLabelStyle}>Email</div>
-          <input value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} style={inputStyle} />
+          <AriaTextField value={form.email} onChange={(value) => setForm((f) => ({ ...f, email: value }))} style={inputStyle} aria-label="Email" />
         </div>
         <div>
           <div style={fieldLabelStyle}>Stage</div>
-          <select value={form.stage} onChange={(e) => setForm((f) => ({ ...f, stage: e.target.value }))} style={inputStyle}>
-            <option value="">—</option>
-            {STAGE_OPTIONS.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
+          <AriaSelect value={form.stage} onChange={(value) => setForm((f) => ({ ...f, stage: value }))} ariaLabel="Stage" placeholder="—" style={inputStyle} options={STAGE_OPTIONS.map((s) => ({ value: s, label: s }))} />
         </div>
       </Section>
 

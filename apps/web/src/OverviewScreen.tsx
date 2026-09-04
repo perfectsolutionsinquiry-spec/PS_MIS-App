@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import { Button } from "react-aria-components";
+import { AriaSelect } from "./AriaControls";
 import type { DashboardKpis, DailyCollectionRow, PipelineData } from "./types";
 import { formatCompactInr, formatPct, formatShortDate } from "./format";
 import PageHeader from "./PageHeader";
@@ -368,18 +369,14 @@ export default function OverviewScreen({ kpis, pipeline }: { kpis: DashboardKpis
           table={outstandingTable}
           extra={
             <div>
-              <select
+              <AriaSelect
                 value={balancePick}
-                onChange={(e) => setBalancePick(e.target.value)}
+                onChange={setBalancePick}
+                ariaLabel="Outstanding customer"
+                placeholder={`All customers (${outstandingAll.length})`}
                 style={{ ...controlStyle, width: "100%" }}
-              >
-                <option value="">All customers ({outstandingAll.length})</option>
-                {outstandingAll.map((row) => (
-                  <option key={row.customer} value={row.customer}>
-                    {row.customer} · {formatCompactInr(row.balance)}
-                  </option>
-                ))}
-              </select>
+                options={outstandingAll.map((row) => ({ value: row.customer, label: `${row.customer} · ${formatCompactInr(row.balance)}` }))}
+              />
               <div style={{ fontSize: "0.76rem", color: "#94a3b8", marginTop: "0.5rem" }}>
                 {balancePick ? (
                   <>
@@ -410,17 +407,13 @@ export default function OverviewScreen({ kpis, pipeline }: { kpis: DashboardKpis
           subtitle="Money received, day by day · grouped by week (week starting)"
           table={dailyTable}
           extra={
-            <select
-              value={dailyWeeks}
-              onChange={(e) => setDailyWeeks(Number(e.target.value))}
+            <AriaSelect
+              value={String(dailyWeeks)}
+              onChange={(value) => setDailyWeeks(Number(value))}
+              ariaLabel="Collection range"
               style={controlStyle}
-            >
-              {DAILY_RANGE_OPTIONS.map((opt) => (
-                <option key={opt.weeks} value={opt.weeks}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+              options={DAILY_RANGE_OPTIONS.map((opt) => ({ value: String(opt.weeks), label: opt.label }))}
+            />
           }
         >
           {dailyLoading ? (

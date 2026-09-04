@@ -105,6 +105,9 @@ A live, searchable, sortable table of every customer you have access to.
   builder. Required fields are marked with a red `*`. Everything else on
   the record gets filled in afterwards by opening the new customer and
   editing it, same as any existing customer.
+- **Consistent accessible controls** — text fields, dropdowns, checkboxes, and
+  buttons use consistent keyboard and assistive-technology behavior throughout
+  the application. Their business meaning and workflow remain unchanged.
 
 Clicking any row opens that customer's full record. Use the record's Back
 control to return to the customer list. "New customer" is also a full-page

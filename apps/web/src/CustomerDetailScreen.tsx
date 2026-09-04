@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "react-aria-components";
+import { AriaSelect, AriaTextArea, AriaTextField } from "./AriaControls";
 import type { CSSProperties, ReactNode } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import type { Bank, CustomerDetailResponse, Milestone, Payment } from "./types";
@@ -121,39 +122,26 @@ function FieldRow({
           {def.key === "bankId" ? "—" /* bankName is shown instead, see caller */ : formatFieldValue(value)}
         </div>
       ) : def.type === "textarea" ? (
-        <textarea
+        <AriaTextArea
           value={value === null ? "" : String(value)}
-          onChange={(e) => onChange(def.dbKey!, e.target.value)}
+          onChange={(nextValue) => onChange(def.dbKey!, nextValue)}
           rows={2}
           style={{ ...inputStyle, resize: "vertical" }}
+          aria-label={def.label}
         />
       ) : def.type === "select" && def.key === "stage" ? (
-        <select value={value === null ? "" : String(value)} onChange={(e) => onChange(def.dbKey!, e.target.value)} style={inputStyle}>
-          <option value="">—</option>
-          {STAGE_OPTIONS.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
+        <AriaSelect value={value === null ? "" : String(value)} onChange={(nextValue) => onChange(def.dbKey!, nextValue)} style={inputStyle} ariaLabel={def.label} placeholder="—" options={STAGE_OPTIONS.map((s) => ({ value: s, label: s }))} />
       ) : def.type === "select" && def.key === "fundingSource" ? (
-        <select value={value === null ? "" : String(value)} onChange={(e) => onChange(def.dbKey!, e.target.value)} style={inputStyle}>
-          <option value="">—</option>
-          {FUNDING_SOURCE_OPTIONS.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
+        <AriaSelect value={value === null ? "" : String(value)} onChange={(nextValue) => onChange(def.dbKey!, nextValue)} style={inputStyle} ariaLabel={def.label} placeholder="—" options={FUNDING_SOURCE_OPTIONS.map((s) => ({ value: s, label: s }))} />
       ) : def.type === "select" && def.key === "bankId" ? (
-        <select value={value === null ? "" : String(value)} onChange={(e) => onChange(def.dbKey!, e.target.value)} style={inputStyle}>
-          <option value="">—</option>
-          {banks.map((b) => (
-            <option key={b.id} value={b.id}>{b.name}</option>
-          ))}
-        </select>
+        <AriaSelect value={value === null ? "" : String(value)} onChange={(nextValue) => onChange(def.dbKey!, nextValue)} style={inputStyle} ariaLabel={def.label} placeholder="—" options={banks.map((b) => ({ value: b.id, label: b.name }))} />
       ) : (
-        <input
+        <AriaTextField
           type={def.type === "number" ? "number" : def.type === "date" ? "date" : "text"}
           value={value === null ? "" : String(value)}
-          onChange={(e) => onChange(def.dbKey!, e.target.value)}
+          onChange={(nextValue) => onChange(def.dbKey!, nextValue)}
           style={inputStyle}
+          aria-label={def.label}
         />
       )}
     </div>
@@ -445,16 +433,7 @@ export default function CustomerDetailScreen({ customerId, onBack }: { customerI
                 <div key={def.key}>
                   <div style={{ fontSize: "0.72rem", color: "#64748b", marginBottom: "0.25rem" }}>{def.label}</div>
                   {editing ? (
-                    <select
-                      value={form.bank_id ?? ""}
-                      onChange={(e) => setForm((f) => ({ ...f, bank_id: e.target.value }))}
-                      style={inputStyle}
-                    >
-                      <option value="">—</option>
-                      {banks.map((b) => (
-                        <option key={b.id} value={b.id}>{b.name}</option>
-                      ))}
-                    </select>
+                    <AriaSelect value={form.bank_id ?? ""} onChange={(value) => setForm((f) => ({ ...f, bank_id: value }))} style={inputStyle} ariaLabel="Financing bank" placeholder="—" options={banks.map((b) => ({ value: b.id, label: b.name }))} />
                   ) : (
                     <div style={{ fontSize: "0.85rem", color: "#0f172a", minHeight: "1.5rem", paddingTop: "0.15rem" }}>
                       {c.bankName ?? "—"}
@@ -515,23 +494,23 @@ export default function CustomerDetailScreen({ customerId, onBack }: { customerI
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "0.75rem", marginBottom: "0.75rem" }}>
               <div>
                 <div style={fieldLabelStyle}>Date received</div>
-                <input type="date" value={paymentForm.received_on} onChange={(e) => setPaymentForm((f) => ({ ...f, received_on: e.target.value }))} style={inputStyle} />
+                <AriaTextField type="date" value={paymentForm.received_on} onChange={(value) => setPaymentForm((f) => ({ ...f, received_on: value }))} style={inputStyle} aria-label="Date received" />
               </div>
               <div>
                 <div style={fieldLabelStyle}>Flat cost received</div>
-                <input type="number" value={paymentForm.flat_cost_received} onChange={(e) => setPaymentForm((f) => ({ ...f, flat_cost_received: e.target.value }))} style={inputStyle} />
+                <AriaTextField type="number" value={paymentForm.flat_cost_received} onChange={(value) => setPaymentForm((f) => ({ ...f, flat_cost_received: value }))} style={inputStyle} aria-label="Flat cost received" />
               </div>
               <div>
                 <div style={fieldLabelStyle}>GST received</div>
-                <input type="number" value={paymentForm.gst_received} onChange={(e) => setPaymentForm((f) => ({ ...f, gst_received: e.target.value }))} style={inputStyle} />
+                <AriaTextField type="number" value={paymentForm.gst_received} onChange={(value) => setPaymentForm((f) => ({ ...f, gst_received: value }))} style={inputStyle} aria-label="GST received" />
               </div>
               <div>
                 <div style={fieldLabelStyle}>Source</div>
-                <input type="text" placeholder="e.g. Own funds, LIC Housing" value={paymentForm.source} onChange={(e) => setPaymentForm((f) => ({ ...f, source: e.target.value }))} style={inputStyle} />
+                <AriaTextField type="text" placeholder="e.g. Own funds, LIC Housing" value={paymentForm.source} onChange={(value) => setPaymentForm((f) => ({ ...f, source: value }))} style={inputStyle} aria-label="Payment source" />
               </div>
               <div style={{ gridColumn: "1 / -1" }}>
                 <div style={fieldLabelStyle}>Remark</div>
-                <input type="text" value={paymentForm.remark} onChange={(e) => setPaymentForm((f) => ({ ...f, remark: e.target.value }))} style={inputStyle} />
+                <AriaTextField type="text" value={paymentForm.remark} onChange={(value) => setPaymentForm((f) => ({ ...f, remark: value }))} style={inputStyle} aria-label="Payment remark" />
               </div>
             </div>
             {paymentError && (
