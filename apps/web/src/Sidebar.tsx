@@ -64,7 +64,7 @@ function NavButton({
     <Button
       onClick={() => enabled && onClick()}
       isDisabled={!enabled}
-      title={collapsed ? label : enabled ? undefined : "Coming soon"}
+      aria-label={collapsed ? label : enabled ? label : `${label} — coming soon`}
       style={{
         display: "flex",
         alignItems: "center",
@@ -149,7 +149,7 @@ export default function Sidebar({
 
       <Button
         onClick={() => setCollapsed((c) => !c)}
-        title={collapsed ? "Expand" : "Collapse"}
+        aria-label={collapsed ? "Expand" : "Collapse"}
         style={{
           display: "flex",
           alignItems: "center",

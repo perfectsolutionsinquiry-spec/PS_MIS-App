@@ -281,7 +281,7 @@ export default function DataTable<T>({
           )}
           <Button
             type="button"
-            title="Build filters"
+            aria-label="Build filters"
             onClick={() => setAdvancedOpen(true)}
             style={{ ...iconButtonStyle, color: advancedFilter.groups.length ? "#2563eb" : "#64748b" }}
           >
@@ -290,7 +290,7 @@ export default function DataTable<T>({
           </Button>
           <Button
             type="button"
-            title="Configure columns"
+            aria-label="Configure columns"
             onClick={() => setConfigOpen(true)}
             style={iconButtonStyle}
           >
@@ -541,7 +541,7 @@ function AdvancedFilterModal<T>({
                 <div className="advanced-filter-logic" style={{ display: "flex", gap: "0.25rem", alignItems: "center", minWidth: "max-content" }}>
                   <Button type="button" onClick={addOrCondition} style={logicButtonStyle}>or</Button>
                   <Button type="button" onClick={() => addCondition(group.id)} style={logicButtonStyle}>and</Button>
-                  <Button type="button" onClick={() => removeCondition(group.id, condition.id)} title="Delete condition" aria-label="Delete condition" style={deleteButtonStyle}><TrashIcon /></Button>
+                  <Button type="button" onClick={() => removeCondition(group.id, condition.id)} aria-label="Delete condition" style={deleteButtonStyle}><TrashIcon /></Button>
                 </div>
               </div>
             ))}
@@ -557,10 +557,10 @@ function AdvancedFilterModal<T>({
             {sorts.map((sort, index) => (
               <div key={`${sort.key}-${index}`} className="advanced-filter-sort-row" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto auto", gap: "0.4rem", marginTop: "0.3rem", alignItems: "center" }}>
                 <AriaSelect value={sort.key} onChange={(value) => setSorts((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, key: value } : item))} style={{ ...selectStyle, width: "100%" }} ariaLabel="Sort field" options={columns.map((column) => ({ value: column.key, label: column.label }))} />
-                <Button type="button" title={sort.dir === "asc" ? "Sort ascending" : "Sort descending"} onClick={() => setSorts((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, dir: item.dir === "asc" ? "desc" : "asc" } : item))} style={sortDirectionButtonStyle}>
+                <Button type="button" aria-label={sort.dir === "asc" ? "Sort ascending" : "Sort descending"} onClick={() => setSorts((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, dir: item.dir === "asc" ? "desc" : "asc" } : item))} style={sortDirectionButtonStyle}>
                   {sort.dir === "asc" ? "↑" : "↓"}
                 </Button>
-                <Button type="button" title="Remove sort" onClick={() => setSorts((current) => current.filter((_, itemIndex) => itemIndex !== index))} style={sortRemoveButtonStyle}>×</Button>
+                <Button type="button" aria-label="Remove sort" onClick={() => setSorts((current) => current.filter((_, itemIndex) => itemIndex !== index))} style={sortRemoveButtonStyle}>×</Button>
               </div>
             ))}
             <Button type="button" onClick={() => setSorts((current) => [...current, { key: columns[0]?.key ?? "", dir: "asc" }])} style={addSortButtonStyle}>+ Add Sort</Button>
@@ -746,7 +746,7 @@ function ColumnConfigModal<T>({
             <div style={{ fontWeight: 700, fontSize: "1.15rem", color: "#0f172a", marginBottom: "0.35rem" }}>Personalize fields</div>
             <div style={{ fontSize: "0.86rem", color: "#475569", marginBottom: "1rem" }}>Select the columns you'd like and arrange how they're ordered</div>
           </div>
-          <Button type="button" onClick={onCancel} title="Close dialog" aria-label="Close dialog" style={{ ...closeButtonStyle, border: "1px solid #4f46e5", color: "#334155", width: 32, height: 32, fontSize: "1.35rem" }}>×</Button>
+          <Button type="button" onClick={onCancel} aria-label="Close dialog" style={{ ...closeButtonStyle, border: "1px solid #4f46e5", color: "#334155", width: 32, height: 32, fontSize: "1.35rem" }}>×</Button>
         </div>
 
         <div className="slushbucket-columns" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.8rem" }}>
@@ -773,9 +773,9 @@ function ColumnConfigModal<T>({
                 <div key={key} style={{ display: "flex", alignItems: "center", gap: "0.45rem", border: "1px solid #cbd5e1", borderRadius: 6, padding: "0.55rem 0.6rem", marginBottom: "0.45rem", fontSize: "0.88rem", color: "#334155" }}>
                   <span aria-hidden="true" style={{ color: "#64748b", letterSpacing: "-0.15rem" }}>⁝⁝</span>
                   <span style={{ flex: 1 }}>{labelFor(key)}</span>
-                  <Button type="button" title="Move up" onClick={() => moveSelected(key, -1)} style={slushIconButtonStyle}>↑</Button>
-                  <Button type="button" title="Move down" onClick={() => moveSelected(key, 1)} style={slushIconButtonStyle}>↓</Button>
-                  <Button type="button" title={`Remove ${labelFor(key)}`} aria-label={`Remove ${labelFor(key)}`} onClick={() => toggleColumn(key)} style={slushIconButtonStyle}>×</Button>
+                  <Button type="button" aria-label="Move up" onClick={() => moveSelected(key, -1)} style={slushIconButtonStyle}>↑</Button>
+                  <Button type="button" aria-label="Move down" onClick={() => moveSelected(key, 1)} style={slushIconButtonStyle}>↓</Button>
+                  <Button type="button" aria-label={`Remove ${labelFor(key)}`} onClick={() => toggleColumn(key)} style={slushIconButtonStyle}>×</Button>
                 </div>
               ))}
             </div>
@@ -783,7 +783,7 @@ function ColumnConfigModal<T>({
         </div>
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem", marginTop: "1.25rem" }}>
-          <Button type="button" isDisabled title="Default column settings will be managed from Settings" style={{ ...secondaryBtnStyle, color: "#94a3b8", cursor: "not-allowed", opacity: 0.7 }}>Reset to default</Button>
+          <Button type="button" isDisabled aria-label="Default column settings will be managed from Settings" style={{ ...secondaryBtnStyle, color: "#94a3b8", cursor: "not-allowed", opacity: 0.7 }}>Reset to default</Button>
           <div style={{ display: "flex", gap: "0.5rem" }}>
           <Button type="button" onClick={onCancel} style={secondaryBtnStyle}>Cancel</Button>
           <Button

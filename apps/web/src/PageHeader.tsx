@@ -11,7 +11,7 @@ function ActionIcon({ path, title }: { path: string; title: string }) {
     <Button
       type="button"
       isDisabled
-      title={`${title} — coming soon`}
+      aria-label={`${title} — coming soon`}
       style={{
         width: 36,
         height: 36,
@@ -73,7 +73,6 @@ export default function PageHeader({
             type="button"
             onClick={() => void onRefresh()}
             isDisabled={refreshing}
-            title="Refresh list"
             aria-label="Refresh list"
             style={{
               width: 36,

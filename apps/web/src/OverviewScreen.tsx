@@ -82,7 +82,7 @@ function ChartCard({
           <Button
             type="button"
             isDisabled
-            title="View as table — coming soon"
+            aria-label="View as table — coming soon"
             style={{
               fontSize: "0.72rem",
               fontWeight: 600,

@@ -75,7 +75,7 @@ export default function TabStrip({
                   e.stopPropagation();
                   onClose(t.key);
                 }}
-                title={`Close ${t.label}`}
+                aria-label={`Close ${t.label}`}
                 style={{
                   border: "none",
                   background: "none",
