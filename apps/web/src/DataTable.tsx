@@ -387,8 +387,13 @@ export default function DataTable<T>({
                               cursor: "pointer",
                               color: hasFilter ? "#2563eb" : "#94a3b8",
                               fontWeight: 700,
-                              padding: "0 0.15rem",
-                              fontSize: "0.9rem",
+                              padding: 0,
+                              width: "1rem",
+                              height: "1rem",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: "0.72rem",
                               lineHeight: 1,
                             }}
                           >
