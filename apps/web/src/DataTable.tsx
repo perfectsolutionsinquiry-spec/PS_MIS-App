@@ -495,7 +495,7 @@ function AdvancedFilterModal<T>({
   const selectStyle: CSSProperties = { padding: "0.45rem 0.5rem", border: "1px solid #cbd5e1", borderRadius: 6, background: "white", color: "#0f172a", fontSize: "0.82rem" };
   return createPortal(
     <div style={overlayStyle}>
-      <div style={{ ...modalStyle, width: "min(760px, calc(100vw - 2rem))" }}>
+      <div className="advanced-filter-modal" style={{ ...modalStyle, width: "min(760px, calc(100vw - 2rem))" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
           <div>
             <h2 style={{ margin: 0, fontSize: "1.1rem", color: "#0f172a" }}>Filter customers</h2>
@@ -506,7 +506,7 @@ function AdvancedFilterModal<T>({
         {groups.map((group, groupIndex) => (
           <div key={group.id} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "0.75rem", marginBottom: "0.65rem" }}>
             {group.conditions.map((condition, index) => (
-              <div key={condition.id} style={{ display: "grid", gridTemplateColumns: "1.1fr 1.1fr 1.5fr auto", gap: "0.45rem", alignItems: "center", marginBottom: "0.45rem" }}>
+              <div key={condition.id} className="advanced-filter-condition" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(0, 1.5fr) auto", gap: "0.45rem", alignItems: "center", marginBottom: "0.45rem" }}>
                 <select value={condition.field} onChange={(e) => updateCondition(group.id, condition.id, { field: e.target.value })} style={selectStyle}>
                   {columns.filter((column) => column.searchable !== false).map((column) => <option key={column.key} value={column.key}>{column.label}</option>)}
                 </select>
@@ -523,7 +523,7 @@ function AdvancedFilterModal<T>({
                   )}
                   <button type="button" onClick={() => removeCondition(group.id, condition.id)} title="Remove condition" style={attachedRemoveButtonStyle}>×</button>
                 </div>
-                <div style={{ display: "flex", gap: "0.25rem", alignItems: "center" }}>
+                <div className="advanced-filter-logic" style={{ display: "flex", gap: "0.25rem", alignItems: "center" }}>
                   <button type="button" onClick={addOrCondition} style={logicButtonStyle}>or</button>
                   <button type="button" onClick={() => addCondition(group.id)} style={logicButtonStyle}>and</button>
                 </div>
@@ -533,7 +533,7 @@ function AdvancedFilterModal<T>({
           </div>
         ))}
         <button type="button" onClick={addGroup} style={outlineButtonStyle}>Add condition set</button>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.7rem", marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid #e2e8f0" }}>
+        <div className="advanced-filter-options" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: "0.7rem", marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid #e2e8f0" }}>
           <label style={labelStyle}>Group rows by
             <select value={groupBy} onChange={(e) => setGroupBy(e.target.value)} style={{ ...selectStyle, width: "100%", marginTop: "0.3rem" }}>
               <option value="">No grouping</option>{columns.map((column) => <option key={column.key} value={column.key}>{column.label}</option>)}

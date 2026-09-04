@@ -87,6 +87,8 @@ A live, searchable, sortable table of every customer you have access to.
   sort direction. **Add condition set** creates another OR set. Nothing
   changes until you press **Run**; **Cancel** leaves the current list
   unchanged.
+  The filter window rearranges its controls for smaller screens rather than
+  allowing fields or buttons to run off the edge.
 - **New customer** — opens a full page (not a popup) with a short form:
   name, agreement no., phone, email, stage — plus, for staff only, which
   builder. Required fields are marked with a red `*`. Everything else on

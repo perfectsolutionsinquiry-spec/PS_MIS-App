@@ -26,3 +26,33 @@ body {
   margin: 0;
   font-family: var(--font-sans);
 }
+
+.advanced-filter-modal {
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+}
+
+@media (max-width: 680px) {
+  .advanced-filter-condition {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  }
+
+  .advanced-filter-condition > div:nth-child(3) {
+    grid-column: 1 / -1;
+  }
+
+  .advanced-filter-logic {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+
+  .advanced-filter-options {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .advanced-filter-condition {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
