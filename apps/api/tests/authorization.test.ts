@@ -4,6 +4,7 @@ import {
   hasCollectionsCapability,
   normalizeCollectionsRole,
 } from "../src/authorization.js";
+import { requireCapability } from "../src/auth.js";
 
 describe("Collections authorization catalogue", () => {
   it("preserves current legacy role names while normalizing them", () => {
@@ -28,5 +29,22 @@ describe("Collections authorization catalogue", () => {
   it("does not grant capabilities to an unknown role", () => {
     expect(capabilitiesForRole("unknown-role").size).toBe(0);
     expect(hasCollectionsCapability("unknown-role", "customers.read")).toBe(false);
+  });
+
+  it("returns 403 when a request lacks a route capability", async () => {
+    const send = (body: unknown) => body;
+    const reply = {
+      code: (status: number) => ({
+        send: (body: unknown) => ({ status, body: send(body) }),
+      }),
+    };
+    const result = await requireCapability("payments.reverse")(
+      { identity: { role: "finance_operator", capabilities: capabilitiesForRole("finance_operator") } } as never,
+      reply as never
+    );
+    expect(result).toEqual({
+      status: 403,
+      body: { error: "This account does not have the payments.reverse capability." },
+    });
   });
 });

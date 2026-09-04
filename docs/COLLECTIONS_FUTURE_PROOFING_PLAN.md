@@ -404,10 +404,10 @@ Status meanings:
 - [x] Define the approved Collections roles and their capability bundles.
 - [ ] Introduce an internal membership/context type without changing the
   current login experience.
-- [ ] Enforce capabilities on the server, never in the frontend alone.
+- [x] Enforce capabilities on the server, never in the frontend alone.
 - [ ] Keep staff access explicit and auditable rather than treating staff as
   an automatic unrestricted role.
-- [ ] Add tests for tenant user, staff user, read-only user, finance operator,
+- [x] Add tests for tenant user, staff user, read-only user, finance operator,
   and denied actions.
 
 ### Phase 2 — Add tenant-aware request context

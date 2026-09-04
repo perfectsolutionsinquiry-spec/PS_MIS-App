@@ -1,6 +1,10 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { createClerkClient, verifyToken } from "@clerk/backend";
 import { pool } from "./db.js";
+import {
+  capabilitiesForRole,
+  type CollectionsCapability,
+} from "./authorization.js";
 
 // Everything about WHO can log in and WHETHER their password is right is
 // Clerk's problem, not ours (see db/migrations/0002_clerk_auth.sql for why).
@@ -10,8 +14,21 @@ import { pool } from "./db.js";
 // our own database.
 
 export type Identity =
-  | { kind: "staff"; staffId: string; fullName: string | null; role: string }
-  | { kind: "builder"; builderUserId: string; builderId: string; fullName: string | null; role: string };
+  | {
+      kind: "staff";
+      staffId: string;
+      fullName: string | null;
+      role: string;
+      capabilities: ReadonlySet<CollectionsCapability>;
+    }
+  | {
+      kind: "builder";
+      builderUserId: string;
+      builderId: string;
+      fullName: string | null;
+      role: string;
+      capabilities: ReadonlySet<CollectionsCapability>;
+    };
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -31,7 +48,13 @@ async function lookupIdentity(clerkUserId: string): Promise<Identity | null> {
   );
   if (staff.rows.length > 0) {
     const row = staff.rows[0];
-    return { kind: "staff", staffId: row.id, fullName: row.full_name, role: row.role };
+    return {
+      kind: "staff",
+      staffId: row.id,
+      fullName: row.full_name,
+      role: row.role,
+      capabilities: capabilitiesForRole(row.role),
+    };
   }
 
   const builderUser = await pool.query(
@@ -46,6 +69,7 @@ async function lookupIdentity(clerkUserId: string): Promise<Identity | null> {
       builderId: row.builder_id,
       fullName: row.full_name,
       role: row.role,
+      capabilities: capabilitiesForRole(row.role),
     };
   }
 
@@ -87,6 +111,16 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply) 
   }
 
   request.identity = identity;
+}
+
+export function requireCapability(capability: CollectionsCapability) {
+  return async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!request.identity?.capabilities.has(capability)) {
+      return reply.code(403).send({
+        error: `This account does not have the ${capability} capability.`,
+      });
+    }
+  };
 }
 
 // Runs `fn` with a database client whose row-level-security session

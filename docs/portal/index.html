@@ -264,6 +264,7 @@ const CATEGORIES = [
         <h3>Approved Collections roles</h3>
         <p>Platform Staff, Tenant Administrator, Collections Manager, Collections Operator, Finance Operator, Read-only User, and temporary reason-based Support Staff. Roles bundle exact capabilities such as <code>customers.read</code>, <code>payments.record</code>, and <code>payments.reverse</code>.</p>
         <p>The server-owned catalogue is implemented in <code>apps/api/src/authorization.ts</code>. Existing <code>admin</code> and <code>staff</code> values are normalized as compatibility aliases; current login behavior is unchanged. Reversal and approval capabilities are intentionally separate from ordinary payment recording.</p>
+        <p>Routes now enforce capabilities on the server: customer reads, creates, and edits; payment recording; reports; builder administration; and shared bank reference access. The frontend is not trusted to enforce these rules.</p>
         <h3>Approved delivery phases</h3>
         <ol>
          <li>Protect the existing experience.</li>

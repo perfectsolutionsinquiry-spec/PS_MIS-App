@@ -1,7 +1,7 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import { dbPing, pool } from "./db.js";
-import { requireAuth, withTenantClient } from "./auth.js";
+import { requireAuth, requireCapability, withTenantClient } from "./auth.js";
 
 // RULE FOR THIS WHOLE APP: every route here is the only place that decides
 // anything that matters — access checks, calculations, who owns which row.
@@ -46,7 +46,7 @@ app.get("/me", { preHandler: requireAuth }, async (request) => {
 // at the database level even if this handler had a bug — but the handler
 // still never accepts a builder_id from the client, only from the verified
 // session, as a second layer.
-app.get("/customers", { preHandler: requireAuth }, async (request) => {
+app.get("/customers", { preHandler: [requireAuth, requireCapability("customers.read")] }, async (request) => {
   if (!pool) return { customers: [], note: "No database connected." };
   return withTenantClient(request.identity!, async (client) => {
     // Note: the customers table's column is contact_number, not phone (see
@@ -76,7 +76,7 @@ app.get("/customers", { preHandler: requireAuth }, async (request) => {
 // builder picks from the same bank list, so this reads straight off the
 // pool, the same exemption /dashboard/overview's loan-by-bank query relies
 // on via its join.
-app.get("/banks", { preHandler: requireAuth }, async () => {
+app.get("/banks", { preHandler: [requireAuth, requireCapability("customers.read")] }, async () => {
   if (!pool) return { banks: [] };
   const result = await pool.query("select id, name from banks order by name");
   return { banks: result.rows };
@@ -88,7 +88,7 @@ app.get("/banks", { preHandler: requireAuth }, async () => {
 // never anything the client sends) and has no legitimate reason to see
 // every other builder's name — this would be a real cross-tenant leak for
 // them, unlike /banks above, which is genuinely shared reference data.
-app.get("/builders", { preHandler: requireAuth }, async (request, reply) => {
+app.get("/builders", { preHandler: [requireAuth, requireCapability("users.manage")] }, async (request, reply) => {
   if (!pool) return { builders: [] };
   if (request.identity!.kind !== "staff") {
     return reply.code(403).send({ error: "Only staff can list builders." });
@@ -104,7 +104,7 @@ app.get("/builders", { preHandler: requireAuth }, async (request, reply) => {
 // reasoning as /dashboard/overview's num()/pctOrNull() — pg returns
 // `numeric` as a string and `date` as a JS Date, and the frontend should
 // never have to remember that per field.
-app.get("/customers/:id", { preHandler: requireAuth }, async (request, reply) => {
+app.get("/customers/:id", { preHandler: [requireAuth, requireCapability("customers.read")] }, async (request, reply) => {
   if (!pool) return reply.code(503).send({ error: "No database connected." });
   const { id } = request.params as { id: string };
 
@@ -248,7 +248,7 @@ const EDITABLE_CUSTOMER_FIELDS = [
   "stage", "dl_status", "dl_date", "remark",
 ];
 
-app.patch("/customers/:id", { preHandler: requireAuth }, async (request, reply) => {
+app.patch("/customers/:id", { preHandler: [requireAuth, requireCapability("customers.edit")] }, async (request, reply) => {
   if (!pool) return reply.code(503).send({ error: "No database connected." });
   const { id } = request.params as { id: string };
   const body = (request.body ?? {}) as Record<string, unknown>;
@@ -289,7 +289,7 @@ app.patch("/customers/:id", { preHandler: requireAuth }, async (request, reply) 
 // Uses the exact same EDITABLE_CUSTOMER_FIELDS allowlist PATCH above does,
 // so a new customer can never be created with a field this app doesn't
 // already know how to display and edit.
-app.post("/customers", { preHandler: requireAuth }, async (request, reply) => {
+app.post("/customers", { preHandler: [requireAuth, requireCapability("customers.create")] }, async (request, reply) => {
   if (!pool) return reply.code(503).send({ error: "No database connected." });
   const body = (request.body ?? {}) as Record<string, unknown>;
 
@@ -342,7 +342,7 @@ app.post("/customers", { preHandler: requireAuth }, async (request, reply) => {
 // no PATCH/DELETE for a recovery_transactions row; correcting one means a
 // separate offsetting entry, not editing history, and that reversal flow
 // isn't built yet (recorded as an open gap, not implemented as a shortcut).
-app.post("/customers/:id/payments", { preHandler: requireAuth }, async (request, reply) => {
+app.post("/customers/:id/payments", { preHandler: [requireAuth, requireCapability("payments.record")] }, async (request, reply) => {
   if (!pool) return reply.code(503).send({ error: "No database connected." });
   const { id } = request.params as { id: string };
   // Snake_case body keys, matching PATCH /customers/:id above rather than
@@ -397,7 +397,7 @@ app.post("/customers/:id/payments", { preHandler: requireAuth }, async (request,
 // Overview is a combined figure across every builder. That matches "sees
 // everything across every builder" in CLAUDE.md; a per-builder filter for
 // staff is a later addition, not this one.
-app.get("/dashboard/overview", { preHandler: requireAuth }, async (request) => {
+app.get("/dashboard/overview", { preHandler: [requireAuth, requireCapability("reports.read")] }, async (request) => {
   if (!pool) return { kpis: null, pipeline: null, note: "No database connected." };
   return withTenantClient(request.identity!, async (client) => {
     const result = await client.query(`
@@ -627,7 +627,7 @@ app.get("/dashboard/overview", { preHandler: requireAuth }, async (request) => {
 // at a fixed width via sparser axis labels instead of needing a wider grain.
 const ALLOWED_DAILY_WEEKS = [4, 12, 26, 52];
 
-app.get("/dashboard/daily-collection", { preHandler: requireAuth }, async (request) => {
+app.get("/dashboard/daily-collection", { preHandler: [requireAuth, requireCapability("reports.read")] }, async (request) => {
   if (!pool) return { dailyCollection: [] };
   const query = request.query as { weeks?: string };
   const weeks = ALLOWED_DAILY_WEEKS.includes(Number(query.weeks)) ? Number(query.weeks) : 12;
