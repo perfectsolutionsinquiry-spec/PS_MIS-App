@@ -381,7 +381,7 @@ export default function DataTable<T>({
                               const rect = e.currentTarget.getBoundingClientRect();
                               setOpenFilter({ key: col.key, anchor: { top: rect.top, bottom: rect.bottom, left: rect.left } });
                             }}
-                            title={`Search within ${col.label}`}
+                            aria-label={`Search within ${col.label}`}
                             style={{
                               border: "none",
                               background: "none",
