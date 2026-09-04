@@ -315,6 +315,15 @@ const CATEGORIES = [
     API -- "JSON the frontend only displays" --> FE</pre>
         <div class="callout"><strong>Stack:</strong> <code>apps/api</code> is Fastify + TypeScript on Render, talking to Postgres via <code>pg</code>. <code>apps/web</code> is Vite + React, using Clerk's prebuilt <code>&lt;SignIn/&gt;</code> and a Bearer token from <code>useAuth().getToken()</code> on every fetch.</div>
       `},
+      { id: "baseline-inventory", title: "Collections baseline inventory", html: `
+        <p>This is the protected baseline for the first implementation phase. Foundation work must preserve the current routes, migrations, identity classes, RLS behavior, and Customers experience unless a separate request changes them.</p>
+        <h3>Current API surface</h3>
+        <p><code>/health</code>, <code>/db-check</code>, <code>/me</code>, <code>/customers</code>, <code>POST /customers</code>, <code>/customers/:id</code>, <code>PATCH /customers/:id</code>, <code>POST /customers/:id/payments</code>, <code>/banks</code>, <code>/builders</code>, <code>/dashboard/overview</code>, and <code>/dashboard/daily-collection</code>.</p>
+        <h3>Identity and migration baseline</h3>
+        <p>Clerk verifies the session. <code>staff_users</code> identifies Perfect Solutions staff and <code>builder_users</code> identifies builder users. Tenant queries use transaction-scoped RLS through <code>withTenantClient</code>. Migrations are <code>0001_init.sql</code>, <code>0002_clerk_auth.sql</code>, <code>0003_force_rls.sql</code>, and <code>0004_settings_and_soft_delete.sql</code>.</p>
+        <h3>Customers regression baseline</h3>
+        <p>The current header, count, refresh age, expandable search, column gear, advanced filter builder, URL-backed customer detail, exact <code>New</code> label, three detail tabs, React Aria controls, and branded visual system must remain unchanged during foundation work.</p>
+      `},
       { id: "schema", title: "Database schema map", html: `
         <p>13 tables (<code>db/migrations/0001_init.sql</code>). Every tenant-scoped table carries <code>builder_id</code> directly, even where it could be derived through a join, so the same row-level-security rule applies everywhere without tracing through multiple tables.</p>
         <h3>Entity relationships</h3>

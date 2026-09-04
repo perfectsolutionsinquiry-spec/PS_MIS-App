@@ -389,8 +389,8 @@ Status meanings:
 
 ### Phase 0 — Protect the existing experience
 
-- [ ] Record the current routes, tables, roles, permissions, and migrations.
-- [ ] Record the current Customers screen behavior as the regression baseline.
+- [x] Record the current routes, tables, roles, permissions, and migrations.
+- [x] Record the current Customers screen behavior as the regression baseline.
 - [ ] Confirm that no foundation change alters current labels, navigation,
   filters, table behavior, or URL-backed customer detail navigation.
 - [ ] Keep current `builder_id` behavior working during all compatibility work.

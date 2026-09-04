@@ -75,6 +75,73 @@ requirement, a second-application/provider requirement, or evidence from a
 production safety, isolation, financial, portability, or operational issue.
 Speculative abstractions are deferred.
 
+### 0.2 Collections baseline inventory
+
+This is the protected baseline for the first implementation phase. Changes
+must preserve these routes, migrations, identity classes, and current
+Customers behavior unless a separate request explicitly changes them.
+
+#### API routes currently present
+
+| Route | Current purpose |
+|---|---|
+| `GET /health` | Public API liveness |
+| `GET /db-check` | Public database connectivity check |
+| `GET /me` | Resolve verified Clerk identity to local staff or builder identity |
+| `GET /customers` | Tenant-scoped customer list; currently capped at 1,000 |
+| `POST /customers` | Create a customer; staff selects a builder, builder users use their own builder |
+| `GET /customers/:id` | Tenant-scoped customer detail, co-applicants, payments, milestones, and totals |
+| `PATCH /customers/:id` | Update the allowlisted customer fields |
+| `POST /customers/:id/payments` | Insert one payment into `recovery_transactions` |
+| `GET /banks` | Authenticated shared bank reference data |
+| `GET /builders` | Staff-only builder picker |
+| `GET /dashboard/overview` | Tenant-scoped KPI and chart data |
+| `GET /dashboard/daily-collection?weeks=N` | Tenant-scoped daily collection chart data |
+
+#### Current identity and access baseline
+
+- Clerk verifies the session token.
+- `staff_users` identifies Perfect Solutions staff.
+- `builder_users` identifies a builder user and its `builder_id`.
+- The current local role is a text value on the staff/builder user row.
+- Tenant-scoped queries run through `withTenantClient`.
+- RLS uses `app.is_staff` or `app.current_builder_id` inside the same
+  transaction as the business query.
+- The client never supplies the authority for staff status or builder scope.
+
+The capability model, audit events, and tenant-neutral platform types are
+future implementation work; they must be introduced without weakening this
+baseline.
+
+#### Current migration baseline
+
+Migrations currently present and applied in numeric order by CI:
+
+1. `0001_init.sql` — core Collections schema and initial RLS.
+2. `0002_clerk_auth.sql` — Clerk identity links; removes password hashes.
+3. `0003_force_rls.sql` — forced RLS, safe policy comparison, and the
+   intentional `builder_users` RLS exemption needed for identity lookup.
+4. `0004_settings_and_soft_delete.sql` — customer soft-delete field and
+   current application settings table.
+
+#### Customers regression baseline
+
+The current experience that must remain unchanged during foundation work:
+
+- Customers opens from the sidebar.
+- Header shows `Customer - All`, count, relative last-refresh age, and refresh.
+- Search is a compact expandable magnifier.
+- The gear controls visible columns.
+- The filter control opens the advanced filter builder.
+- Table rows update the URL to `/customers/{id}`.
+- Customer detail values load when the record opens, not during initial list
+  bootstrap.
+- New customer uses the exact `New` label.
+- Customer detail retains Overview, Details, and Related records tabs.
+- Payment entry adds a ledger row; current correction/reversal flow is not yet
+  implemented.
+- React Aria controls and the current branded visual system remain in use.
+
 ---
 
 ## 1. Architecture at a glance
