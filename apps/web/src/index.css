@@ -27,9 +27,19 @@ body {
   font-family: var(--font-sans);
 }
 
+/* React Aria supplies interaction and accessibility behavior; keep the
+   existing compact visual language for its button primitive. */
+button[data-rac] {
+  font: inherit;
+}
+
 .advanced-filter-modal {
   max-height: calc(100vh - 2rem);
   overflow-y: auto;
+}
+
+.slushbucket-columns {
+  min-height: 0;
 }
 
 @media (max-width: 680px) {
@@ -62,6 +72,10 @@ body {
 }
 
 @media (max-width: 420px) {
+  .slushbucket-columns {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
   .advanced-filter-condition {
     grid-template-columns: minmax(0, 1fr) !important;
   }

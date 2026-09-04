@@ -79,16 +79,21 @@ A live, searchable, sortable table of every customer you have access to.
 - **Search everywhere** — the search box above the table searches name,
   phone, email, and stage all at once.
 - **Choose which columns show** — the gear icon opens a two-list picker:
-  move columns between "Hidden" and "Visible," then Save. **This choice
+  search available columns, tick a column to add it, remove selected columns,
+  and use the arrow controls to arrange the selected order before Apply.
+  A disabled **Reset to default** option is shown as a placeholder; default
+  column settings will be managed from Settings later.
+  **This choice
   is remembered on this browser/device only** — it doesn't follow you to
   a different computer, and it isn't shared with anyone else who logs in.
 - **Advanced filters** — the funnel icon beside the gear opens a filter
-  builder. Choose a field, an operation (contains, starts with, ends with,
+  builder expands within the list page rather than opening a popup. Choose a
+  field, an operation (contains, starts with, ends with,
   is, is not, is one of, is empty, or is not empty), and a value. Add
   an **and** or **or** condition directly beside any statement, remove a
   statement with the trash/delete icon, group the results by a field, and choose a
-  sort field and direction. The sort section shows **None** when no sort is
-  applied, and **Add Sort** adds another sort level. **Add condition set**
+  sort field and direction. No sort field is shown until you press **Add Sort**;
+  **Add Sort** then adds another sort level. **Add condition set**
   creates another OR set. Nothing changes until you press **Run**; **Cancel**
   leaves the current list unchanged. Conditions added with **and** must all
   match the same customer; conditions added with **or** create an alternative

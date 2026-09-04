@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { UserButton } from "@clerk/clerk-react";
+import { Button } from "react-aria-components";
 import type { Identity } from "./types";
 
 // Small inline icons — no icon library dependency for a sidebar this size,
@@ -59,9 +60,9 @@ function NavButton({
   label: string; icon: keyof typeof ICONS; enabled: boolean; isActive: boolean; collapsed: boolean; onClick: () => void;
 }) {
   return (
-    <button
+    <Button
       onClick={() => enabled && onClick()}
-      disabled={!enabled}
+      isDisabled={!enabled}
       title={collapsed ? label : enabled ? undefined : "Coming soon"}
       style={{
         display: "flex",
@@ -95,7 +96,7 @@ function NavButton({
           soon
         </span>
       )}
-    </button>
+    </Button>
   );
 }
 
@@ -145,7 +146,7 @@ export default function Sidebar({
         </div>
       </div>
 
-      <button
+      <Button
         onClick={() => setCollapsed((c) => !c)}
         title={collapsed ? "Expand" : "Collapse"}
         style={{
@@ -168,7 +169,7 @@ export default function Sidebar({
       >
         <Icon path={ICONS.menu} size={16} />
         {!collapsed && "Collapse"}
-      </button>
+      </Button>
 
       <nav style={{ flex: 1, overflowY: "auto", padding: "0.6rem 0.75rem", display: "flex", flexDirection: "column", gap: "0.15rem" }}>
         {NAV_ITEMS.map((entry, i) =>

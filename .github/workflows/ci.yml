@@ -75,7 +75,9 @@ jobs:
           node-version: 20
           cache: npm
 
-      - run: npm ci
+      # Frontend dependencies are resolved during CI because this repository is
+      # maintained from an environment without Node/npm for lockfile generation.
+      - run: npm install
 
       # Fail fast on a typecheck/build error before spending time on Postgres
       # setup below.

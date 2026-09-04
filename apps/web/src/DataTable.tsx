@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { Button } from "react-aria-components";
 import type { CSSProperties, ReactNode } from "react";
 
 // A generic, config-driven list view — sortable columns, a per-column
@@ -273,7 +274,7 @@ export default function DataTable<T>({
               }}
             />
           )}
-          <button
+          <Button
             type="button"
             title="Build filters"
             onClick={() => setAdvancedOpen(true)}
@@ -281,22 +282,34 @@ export default function DataTable<T>({
           >
             <FilterIcon />
             {advancedFilter.groups.length > 0 && <span style={{ fontSize: "0.7rem", marginLeft: "-0.25rem" }}>{advancedFilter.groups.length}</span>}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             title="Configure columns"
             onClick={() => setConfigOpen(true)}
             style={iconButtonStyle}
           >
             <GearIcon />
-          </button>
+          </Button>
           {onNew && (
-            <button type="button" onClick={onNew} style={primaryBtnStyle}>
+            <Button type="button" onClick={onNew} style={primaryBtnStyle}>
               + {newLabel}
-            </button>
+            </Button>
           )}
         </div>
       </div>
+
+      {advancedOpen && (
+        <AdvancedFilterModal
+          columns={columns}
+          initial={advancedFilter}
+          onRun={(next) => {
+            setAdvancedFilter(next);
+            setAdvancedOpen(false);
+          }}
+          onCancel={() => setAdvancedOpen(false)}
+        />
+      )}
 
       {rows.length === 0 ? (
         <div
@@ -344,7 +357,7 @@ export default function DataTable<T>({
                           {isSorted && <span style={{ marginLeft: "0.3rem" }}>{activeSort!.dir === "asc" ? "▲" : "▼"}</span>}
                         </span>
                         {col.searchable !== false && (
-                          <button
+                          <Button
                             type="button"
                             // The portal's own outside-click listener
                             // (ColumnFilterMenu) would otherwise see THIS
@@ -376,7 +389,7 @@ export default function DataTable<T>({
                             }}
                           >
                             ⋮
-                          </button>
+                          </Button>
                         )}
                       </span>
                     </th>
@@ -439,17 +452,6 @@ export default function DataTable<T>({
           onCancel={() => setConfigOpen(false)}
         />
       )}
-      {advancedOpen && (
-        <AdvancedFilterModal
-          columns={columns}
-          initial={advancedFilter}
-          onRun={(next) => {
-            setAdvancedFilter(next);
-            setAdvancedOpen(false);
-          }}
-          onCancel={() => setAdvancedOpen(false)}
-        />
-      )}
     </div>
   );
 }
@@ -505,20 +507,19 @@ function AdvancedFilterModal<T>({
     },
   ]);
   const selectStyle: CSSProperties = { padding: "0.45rem 0.5rem", border: "1px solid #cbd5e1", borderRadius: 6, background: "white", color: "#0f172a", fontSize: "0.82rem" };
-  return createPortal(
-    <div style={overlayStyle}>
-      <div className="advanced-filter-modal" style={{ ...modalStyle, width: "min(760px, calc(100vw - 2rem))" }}>
+  return (
+      <div className="advanced-filter-modal advanced-filter-panel" style={{ ...modalStyle, width: "100%", boxSizing: "border-box", marginBottom: "1.25rem" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
           <div>
             <h2 style={{ margin: 0, fontSize: "1.1rem", color: "#0f172a" }}>Filter customers</h2>
             <p style={{ margin: "0.2rem 0 0", color: "#64748b", fontSize: "0.78rem" }}>Conditions within a group use AND. Groups use OR.</p>
           </div>
-          <button type="button" onClick={onCancel} style={closeButtonStyle}>×</button>
+          <Button type="button" onClick={onCancel} style={closeButtonStyle}>×</Button>
         </div>
         {groups.map((group, groupIndex) => (
           <div key={group.id} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "0.75rem", marginBottom: "0.65rem" }}>
             {group.conditions.map((condition, index) => (
-              <div key={condition.id} className="advanced-filter-condition" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(0, 1.5fr) auto", gap: "0.45rem", alignItems: "center", marginBottom: "0.45rem" }}>
+              <div key={condition.id} className="advanced-filter-condition" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(0, 1.5fr) max-content", gap: "0.45rem", alignItems: "center", marginBottom: "0.45rem" }}>
                 <select value={condition.field} onChange={(e) => updateCondition(group.id, condition.id, { field: e.target.value })} style={selectStyle}>
                   {columns.filter((column) => column.searchable !== false).map((column) => <option key={column.key} value={column.key}>{column.label}</option>)}
                 </select>
@@ -535,16 +536,16 @@ function AdvancedFilterModal<T>({
                   )}
                 </div>
                 <div className="advanced-filter-logic" style={{ display: "flex", gap: "0.25rem", alignItems: "center", minWidth: "max-content" }}>
-                  <button type="button" onClick={addOrCondition} style={logicButtonStyle}>or</button>
-                  <button type="button" onClick={() => addCondition(group.id)} style={logicButtonStyle}>and</button>
-                  <button type="button" onClick={() => removeCondition(group.id, condition.id)} title="Delete condition" aria-label="Delete condition" style={deleteButtonStyle}><TrashIcon /></button>
+                  <Button type="button" onClick={addOrCondition} style={logicButtonStyle}>or</Button>
+                  <Button type="button" onClick={() => addCondition(group.id)} style={logicButtonStyle}>and</Button>
+                  <Button type="button" onClick={() => removeCondition(group.id, condition.id)} title="Delete condition" aria-label="Delete condition" style={deleteButtonStyle}><TrashIcon /></Button>
                 </div>
               </div>
             ))}
             {groupIndex > 0 && <div style={{ color: "#64748b", fontSize: "0.72rem", marginTop: "0.15rem" }}>OR condition set</div>}
           </div>
         ))}
-        <button type="button" onClick={addGroup} style={outlineButtonStyle}>Add condition set</button>
+        <Button type="button" onClick={addGroup} style={outlineButtonStyle}>Add condition set</Button>
         <div className="advanced-filter-options" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: "0.7rem", marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid #e2e8f0" }}>
           <label style={labelStyle}>Group rows by
             <select value={groupBy} onChange={(e) => setGroupBy(e.target.value)} style={{ ...selectStyle, width: "100%", marginTop: "0.3rem" }}>
@@ -557,23 +558,20 @@ function AdvancedFilterModal<T>({
                 <select value={sort.key} onChange={(e) => setSorts((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, key: e.target.value } : item))} style={{ ...selectStyle, width: "100%" }}>
                   {columns.map((column) => <option key={column.key} value={column.key}>{column.label}</option>)}
                 </select>
-                <button type="button" title={sort.dir === "asc" ? "Sort ascending" : "Sort descending"} onClick={() => setSorts((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, dir: item.dir === "asc" ? "desc" : "asc" } : item))} style={sortDirectionButtonStyle}>
+                <Button type="button" title={sort.dir === "asc" ? "Sort ascending" : "Sort descending"} onClick={() => setSorts((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, dir: item.dir === "asc" ? "desc" : "asc" } : item))} style={sortDirectionButtonStyle}>
                   {sort.dir === "asc" ? "↑" : "↓"}
-                </button>
-                <button type="button" title="Remove sort" onClick={() => setSorts((current) => current.filter((_, itemIndex) => itemIndex !== index))} style={sortRemoveButtonStyle}>×</button>
+                </Button>
+                <Button type="button" title="Remove sort" onClick={() => setSorts((current) => current.filter((_, itemIndex) => itemIndex !== index))} style={sortRemoveButtonStyle}>×</Button>
               </div>
             ))}
-            {sorts.length === 0 && <div style={{ ...selectStyle, color: "#94a3b8", marginTop: "0.3rem" }}>None</div>}
-            <button type="button" onClick={() => setSorts((current) => [...current, { key: columns[0]?.key ?? "", dir: "asc" }])} style={addSortButtonStyle}>+ Add Sort</button>
+            <Button type="button" onClick={() => setSorts((current) => [...current, { key: columns[0]?.key ?? "", dir: "asc" }])} style={addSortButtonStyle}>+ Add Sort</Button>
           </div>
         </div>
         <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.55rem", marginTop: "1.25rem" }}>
-          <button type="button" onClick={onCancel} style={secondaryBtnStyle}>Cancel</button>
-          <button type="button" onClick={() => onRun({ groups: groups.filter((group) => group.conditions.some((condition) => condition.operator === "isEmpty" || condition.operator === "isNotEmpty" || condition.value.trim())), groupBy, sort: sorts })} style={primaryBtnStyle}>Run</button>
+          <Button type="button" onClick={onCancel} style={secondaryBtnStyle}>Cancel</Button>
+          <Button type="button" onClick={() => onRun({ groups: groups.filter((group) => group.conditions.some((condition) => condition.operator === "isEmpty" || condition.operator === "isNotEmpty" || condition.value.trim())), groupBy, sort: sorts })} style={primaryBtnStyle}>Run</Button>
         </div>
       </div>
-    </div>,
-    document.body
   );
 }
 
@@ -678,7 +676,7 @@ function ColumnFilterMenu({
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
         <span style={{ fontSize: "0.75rem", fontWeight: 600 }}>Filter</span>
-        <button type="button" onClick={onClose} style={{ border: "none", background: "none", cursor: "pointer", color: "#94a3b8" }}>✕</button>
+        <Button type="button" onClick={onClose} style={{ border: "none", background: "none", cursor: "pointer", color: "#94a3b8" }}>✕</Button>
       </div>
       <select
         value={operator}
@@ -697,21 +695,21 @@ function ColumnFilterMenu({
         style={{ width: "100%", fontSize: "0.8rem", padding: "0.35rem 0.5rem", borderRadius: 6, border: "1px solid #e2e8f0", marginBottom: "0.6rem" }}
       />
       <div style={{ display: "flex", gap: "0.4rem" }}>
-        <button type="button" onClick={() => onApply({ operator, value })} style={{ ...primaryBtnStyle, flex: 1, fontSize: "0.75rem", padding: "0.35rem 0" }}>
+        <Button type="button" onClick={() => onApply({ operator, value })} style={{ ...primaryBtnStyle, flex: 1, fontSize: "0.75rem", padding: "0.35rem 0" }}>
           Apply
-        </button>
-        <button type="button" onClick={onClear} style={{ ...secondaryBtnStyle, flex: 1, fontSize: "0.75rem", padding: "0.35rem 0" }}>
+        </Button>
+        <Button type="button" onClick={onClear} style={{ ...secondaryBtnStyle, flex: 1, fontSize: "0.75rem", padding: "0.35rem 0" }}>
           Clear
-        </button>
+        </Button>
       </div>
     </div>,
     document.body
   );
 }
 
-// The gear icon's "adjust visible columns" slushbucket: every column
-// starts in one of the two lists, multi-select, and four buttons move
-// selections (or everything) across. Nothing is saved until "Save".
+// The gear icon's field personalizer mirrors the list-management pattern:
+// available fields are searchable, selected fields are ordered, and changes
+// only reach the table after Apply.
 function ColumnConfigModal<T>({
   columns, visibleKeys, onSave, onCancel,
 }: {
@@ -721,20 +719,12 @@ function ColumnConfigModal<T>({
   onCancel: () => void;
 }) {
   const [visible, setVisible] = useState<string[]>(visibleKeys);
-  const [hiddenSelection, setHiddenSelection] = useState<string[]>([]);
-  const [visibleSelection, setVisibleSelection] = useState<string[]>([]);
+  const [availableQuery, setAvailableQuery] = useState("");
 
   const hidden = columns.filter((c) => !visible.includes(c.key)).map((c) => c.key);
   const labelFor = (key: string) => columns.find((c) => c.key === key)?.label ?? key;
-
-  function moveToVisible(keys: string[]) {
-    setVisible((cur) => [...cur, ...keys.filter((k) => !cur.includes(k))]);
-    setHiddenSelection([]);
-  }
-  function moveToHidden(keys: string[]) {
-    setVisible((cur) => cur.filter((k) => !keys.includes(k)));
-    setVisibleSelection([]);
-  }
+  const available = hidden.filter((key) => labelFor(key).toLowerCase().includes(availableQuery.trim().toLowerCase()));
+  const toggleColumn = (key: string) => setVisible((cur) => cur.includes(key) ? cur.filter((item) => item !== key) : [...cur, key]);
 
   // The "Visible" list's own order becomes the table's actual column
   // order (see DataTable's visibleColumns above) — these move the
@@ -743,90 +733,80 @@ function ColumnConfigModal<T>({
   // changes on every move; moving up walks lowest-index-first and moving
   // down walks highest-index-first so a multi-selected block shifts as a
   // group instead of its members leapfrogging each other.
-  function moveSelected(direction: -1 | 1) {
-    if (visibleSelection.length === 0) return;
+  function moveSelected(key: string, direction: -1 | 1) {
     setVisible((cur) => {
       const next = [...cur];
-      const indices = visibleSelection
-        .map((k) => next.indexOf(k))
-        .filter((i) => i !== -1)
-        .sort((a, b) => (direction === -1 ? a - b : b - a));
-      for (const i of indices) {
-        const swapWith = i + direction;
-        if (swapWith < 0 || swapWith >= next.length) continue;
-        [next[i], next[swapWith]] = [next[swapWith], next[i]];
-      }
+      const index = next.indexOf(key);
+      const swapWith = index + direction;
+      if (index < 0 || swapWith < 0 || swapWith >= next.length) return next;
+      [next[index], next[swapWith]] = [next[swapWith], next[index]];
       return next;
     });
   }
 
   return (
     <div style={overlayStyle} onClick={onCancel}>
-      <div style={{ ...modalStyle, width: 520 }} onClick={(e) => e.stopPropagation()}>
-        <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "#0f172a", marginBottom: "0.25rem" }}>Configure columns</div>
-        <div style={{ fontSize: "0.78rem", color: "#94a3b8", marginBottom: "1rem" }}>
-          Choose which columns show in this table. Saved to this browser only.
+      <div style={{ ...modalStyle, width: "min(760px, calc(100vw - 2rem))" }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem" }}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: "1.15rem", color: "#0f172a", marginBottom: "0.35rem" }}>Personalize fields</div>
+            <div style={{ fontSize: "0.86rem", color: "#475569", marginBottom: "1rem" }}>Select the columns you'd like and arrange how they're ordered</div>
+          </div>
+          <Button type="button" onClick={onCancel} title="Close dialog" aria-label="Close dialog" style={{ ...closeButtonStyle, border: "1px solid #4f46e5", color: "#334155", width: 32, height: 32, fontSize: "1.35rem" }}>×</Button>
         </div>
 
-        <div style={{ display: "flex", gap: "0.75rem", alignItems: "stretch" }}>
-          <div style={{ flex: 1 }}>
-            <div style={fieldLabelStyle}>Hidden</div>
-            <select
-              multiple
-              value={hiddenSelection}
-              onChange={(e) => setHiddenSelection(Array.from(e.target.selectedOptions, (o) => o.value))}
-              style={slushListStyle}
-            >
-              {hidden.map((key) => (
-                <option key={key} value={key}>{labelFor(key)}</option>
-              ))}
-            </select>
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: "0.4rem" }}>
-            <button type="button" title="Show selected" onClick={() => moveToVisible(hiddenSelection)} style={slushBtnStyle}>&gt;</button>
-            <button type="button" title="Show all" onClick={() => moveToVisible(hidden)} style={slushBtnStyle}>&gt;&gt;</button>
-            <button type="button" title="Hide selected" onClick={() => moveToHidden(visibleSelection)} style={slushBtnStyle}>&lt;</button>
-            <button type="button" title="Hide all" onClick={() => moveToHidden(visible)} style={slushBtnStyle}>&lt;&lt;</button>
-          </div>
-
-          <div style={{ flex: 1 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <div style={fieldLabelStyle}>Visible</div>
-              <div style={{ display: "flex", gap: "0.25rem", marginBottom: "0.25rem" }}>
-                <button type="button" title="Move up" onClick={() => moveSelected(-1)} style={{ ...slushBtnStyle, width: 24, height: 22, fontSize: "0.7rem" }}>↑</button>
-                <button type="button" title="Move down" onClick={() => moveSelected(1)} style={{ ...slushBtnStyle, width: 24, height: 22, fontSize: "0.7rem" }}>↓</button>
+        <div className="slushbucket-columns" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.8rem" }}>
+          <div>
+            <div style={{ ...fieldLabelStyle, fontSize: "0.78rem", color: "#334155", marginBottom: "0.45rem" }}>Available columns ({hidden.length})</div>
+            <div style={{ border: "1px solid #cbd5e1", borderRadius: 6, overflow: "hidden" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.45rem", padding: "0.55rem 0.65rem", borderBottom: "1px solid #cbd5e1", color: "#64748b" }}>
+                <span aria-hidden="true">⌕</span>
+                <input value={availableQuery} onChange={(e) => setAvailableQuery(e.target.value)} placeholder="Search" aria-label="Search available columns" style={{ border: "none", outline: "none", width: "100%", fontSize: "0.85rem" }} />
+              </div>
+              <div style={{ height: 260, overflowY: "auto", padding: "0.25rem 0.45rem" }}>
+                {available.map((key) => (
+                  <label key={key} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.45rem 0.2rem", fontSize: "0.86rem", color: "#334155", cursor: "pointer" }}>
+                    <input type="checkbox" checked={false} onChange={() => toggleColumn(key)} />
+                    <span>{labelFor(key)}</span>
+                  </label>
+                ))}
+                {available.length === 0 && <div style={{ padding: "1rem 0.4rem", color: "#94a3b8", fontSize: "0.8rem" }}>No available columns</div>}
               </div>
             </div>
-            <select
-              multiple
-              value={visibleSelection}
-              onChange={(e) => setVisibleSelection(Array.from(e.target.selectedOptions, (o) => o.value))}
-              style={slushListStyle}
-            >
+          </div>
+
+          <div>
+            <div style={{ ...fieldLabelStyle, fontSize: "0.78rem", color: "#334155", marginBottom: "0.45rem" }}>Selected columns ({visible.length})</div>
+            <div style={{ height: 302, overflowY: "auto", border: "1px solid #cbd5e1", borderRadius: 6, padding: "0.45rem" }}>
               {visible.map((key) => (
-                <option key={key} value={key}>{labelFor(key)}</option>
+                <div key={key} style={{ display: "flex", alignItems: "center", gap: "0.45rem", border: "1px solid #cbd5e1", borderRadius: 6, padding: "0.55rem 0.6rem", marginBottom: "0.45rem", fontSize: "0.88rem", color: "#334155" }}>
+                  <span aria-hidden="true" style={{ color: "#64748b", letterSpacing: "-0.15rem" }}>⁝⁝</span>
+                  <span style={{ flex: 1 }}>{labelFor(key)}</span>
+                  <Button type="button" title="Move up" onClick={() => moveSelected(key, -1)} style={slushIconButtonStyle}>↑</Button>
+                  <Button type="button" title="Move down" onClick={() => moveSelected(key, 1)} style={slushIconButtonStyle}>↓</Button>
+                  <Button type="button" title={`Remove ${labelFor(key)}`} aria-label={`Remove ${labelFor(key)}`} onClick={() => toggleColumn(key)} style={slushIconButtonStyle}>×</Button>
+                </div>
               ))}
-            </select>
-            <div style={{ fontSize: "0.7rem", color: "#94a3b8", marginTop: "0.25rem" }}>
-              This order becomes the table's column order.
             </div>
           </div>
         </div>
 
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem", marginTop: "1.25rem" }}>
-          <button type="button" onClick={onCancel} style={secondaryBtnStyle}>Cancel</button>
-          <button
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem", marginTop: "1.25rem" }}>
+          <Button type="button" isDisabled title="Default column settings will be managed from Settings" style={{ ...secondaryBtnStyle, color: "#94a3b8", cursor: "not-allowed", opacity: 0.7 }}>Reset to default</Button>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+          <Button type="button" onClick={onCancel} style={secondaryBtnStyle}>Cancel</Button>
+          <Button
             type="button"
-            // Falls back to whatever was visible before if the user moved
+            // Falls back to the previous visible set if the user moves
             // every column to "Hidden" and hit Save — an empty table with
-            // no columns at all isn't a real state worth letting them save
+            // every column to Available; an empty table isn't a useful state
             // into.
             onClick={() => onSave(visible.length > 0 ? visible : visibleKeys)}
             style={primaryBtnStyle}
           >
-            Save
-          </button>
+            Apply
+          </Button>
+          </div>
         </div>
       </div>
     </div>
@@ -913,22 +893,4 @@ const iconButtonStyle: CSSProperties = {
   cursor: "pointer",
 };
 
-const slushListStyle: CSSProperties = {
-  width: "100%",
-  height: 180,
-  fontSize: "0.82rem",
-  borderRadius: 6,
-  border: "1px solid #e2e8f0",
-  padding: "0.25rem",
-};
-
-const slushBtnStyle: CSSProperties = {
-  width: 36,
-  height: 28,
-  borderRadius: 6,
-  border: "1px solid #e2e8f0",
-  background: "#f8fafc",
-  color: "#475569",
-  cursor: "pointer",
-  fontSize: "0.8rem",
-};
+const slushIconButtonStyle: CSSProperties = { border: "none", background: "transparent", color: "#64748b", cursor: "pointer", fontSize: "0.85rem", lineHeight: 1, padding: "0.1rem" };

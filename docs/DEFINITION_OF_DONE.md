@@ -57,6 +57,10 @@ up).
       unusable. Record the checked viewport sizes in the change notes when
       the UI behavior is materially affected.
 - [ ] **No new console errors** on load.
+- [ ] **Interactive buttons use React Aria** — use the `Button` primitive from
+      `react-aria-components` rather than native `<button>` elements or
+      another button library. Keep behavior and styling explicit through
+      React Aria props and existing component styles.
 
 ## 3. Deploy verification — after pushing
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Button } from "react-aria-components";
 import type { CSSProperties, ReactNode } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import type { Bank, CustomerDetailResponse, Milestone, Payment } from "./types";
@@ -190,7 +191,7 @@ function TabBar({ active, onChange }: { active: TabKey; onChange: (key: TabKey) 
   return (
     <div style={{ display: "flex", gap: "1.5rem", borderBottom: "1px solid #e2e8f0", marginBottom: "1.25rem" }}>
       {TABS.map((t) => (
-        <button
+        <Button
           key={t.key}
           type="button"
           onClick={() => onChange(t.key)}
@@ -207,7 +208,7 @@ function TabBar({ active, onChange }: { active: TabKey; onChange: (key: TabKey) 
           }}
         >
           {t.label}
-        </button>
+        </Button>
       ))}
     </div>
   );
@@ -326,7 +327,7 @@ export default function CustomerDetailScreen({ customerId, onBack }: { customerI
   if (error) {
     return (
       <div>
-        <button type="button" onClick={onBack} style={{ ...backLinkStyle }}>← Back to customers</button>
+        <Button type="button" onClick={onBack} style={{ ...backLinkStyle }}>← Back to customers</Button>
         <div style={{ color: "#b91c1c", background: "#fef2f2", border: "1px solid #fecaca", padding: "0.75rem 1rem", borderRadius: 8, marginTop: "1rem" }}>
           {error}
         </div>
@@ -337,7 +338,7 @@ export default function CustomerDetailScreen({ customerId, onBack }: { customerI
   if (!detail) {
     return (
       <div>
-        <button type="button" onClick={onBack} style={{ ...backLinkStyle }}>← Back to customers</button>
+        <Button type="button" onClick={onBack} style={{ ...backLinkStyle }}>← Back to customers</Button>
         <p style={{ color: "#64748b", fontSize: "0.9rem", marginTop: "1rem" }}>Loading…</p>
       </div>
     );
@@ -347,7 +348,7 @@ export default function CustomerDetailScreen({ customerId, onBack }: { customerI
 
   return (
     <div>
-      <button type="button" onClick={onBack} style={backLinkStyle}>← Back to customers</button>
+      <Button type="button" onClick={onBack} style={backLinkStyle}>← Back to customers</Button>
 
       {/* Name, client no., stage, and the Edit/Save/Cancel controls are
           global to the record — same header regardless of which of the
@@ -362,11 +363,11 @@ export default function CustomerDetailScreen({ customerId, onBack }: { customerI
         <div style={{ display: "flex", gap: "0.5rem" }}>
           {editing ? (
             <>
-              <button type="button" onClick={() => setEditing(false)} disabled={saving} style={secondaryBtnStyle}>Cancel</button>
-              <button type="button" onClick={save} disabled={saving} style={primaryBtnStyle}>{saving ? "Saving…" : "Save changes"}</button>
+              <Button type="button" onClick={() => setEditing(false)} isDisabled={saving} style={secondaryBtnStyle}>Cancel</Button>
+              <Button type="button" onClick={save} isDisabled={saving} style={primaryBtnStyle}>{saving ? "Saving…" : "Save changes"}</Button>
             </>
           ) : (
-            <button type="button" onClick={startEdit} style={primaryBtnStyle}>Edit</button>
+            <Button type="button" onClick={startEdit} style={primaryBtnStyle}>Edit</Button>
           )}
         </div>
       </div>
@@ -538,9 +539,9 @@ export default function CustomerDetailScreen({ customerId, onBack }: { customerI
                 {paymentError}
               </div>
             )}
-            <button type="button" onClick={recordPayment} disabled={paymentSaving} style={primaryBtnStyle}>
+            <Button type="button" onClick={recordPayment} isDisabled={paymentSaving} style={primaryBtnStyle}>
               {paymentSaving ? "Recording…" : "Record payment"}
-            </button>
+            </Button>
           </div>
 
           <Section title={`Payment history (${detail.payments.length})`}>

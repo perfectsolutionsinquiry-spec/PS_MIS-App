@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Button } from "react-aria-components";
 import { useAuth } from "@clerk/clerk-react";
 import type { Builder, Identity } from "./types";
 import { STAGE_OPTIONS, Section, backLinkStyle } from "./CustomerDetailScreen";
@@ -79,7 +80,7 @@ export default function NewCustomerScreen({
 
   return (
     <div>
-      <button type="button" onClick={onBack} disabled={saving} style={backLinkStyle}>← Back to customers</button>
+      <Button type="button" onClick={onBack} isDisabled={saving} style={backLinkStyle}>← Back to customers</Button>
 
       <div style={{ marginTop: "1rem", marginBottom: "1.25rem" }}>
         <h1 style={{ fontSize: "1.3rem", fontWeight: 700, color: "#0f172a", margin: 0 }}>New customer</h1>
@@ -139,10 +140,10 @@ export default function NewCustomerScreen({
       </Section>
 
       <div style={{ display: "flex", gap: "0.5rem" }}>
-        <button type="button" onClick={onBack} disabled={saving} style={secondaryBtnStyle}>Cancel</button>
-        <button type="button" onClick={save} disabled={saving} style={primaryBtnStyle}>
+        <Button type="button" onClick={onBack} isDisabled={saving} style={secondaryBtnStyle}>Cancel</Button>
+        <Button type="button" onClick={save} isDisabled={saving} style={primaryBtnStyle}>
           {saving ? "Creating…" : "Create customer"}
-        </button>
+        </Button>
       </div>
     </div>
   );

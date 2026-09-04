@@ -12,6 +12,8 @@
 // avoid that is a real upgrade path if it's ever worth the complexity —
 // not built now because nothing has asked for it yet.
 
+import { Button } from "react-aria-components";
+
 export type Tab = {
   key: string;
   label: string;
@@ -67,7 +69,7 @@ export default function TabStrip({
           >
             <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{t.label}</span>
             {t.closable && (
-              <button
+              <Button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -87,7 +89,7 @@ export default function TabStrip({
                 }}
               >
                 ✕
-              </button>
+              </Button>
             )}
           </div>
         );

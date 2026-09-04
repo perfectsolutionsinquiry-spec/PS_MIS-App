@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { useAuth } from "@clerk/clerk-react";
+import { Button } from "react-aria-components";
 import type { DashboardKpis, DailyCollectionRow, PipelineData } from "./types";
 import { formatCompactInr, formatPct, formatShortDate } from "./format";
 import PageHeader from "./PageHeader";
@@ -54,7 +55,7 @@ function ChartCard({
           <div style={{ fontSize: "0.76rem", color: "#94a3b8", marginTop: "0.15rem" }}>{subtitle}</div>
         </div>
         {table ? (
-          <button
+          <Button
             type="button"
             onClick={() => setShowTable((v) => !v)}
             style={{
@@ -71,13 +72,13 @@ function ChartCard({
             }}
           >
             {showTable ? "View as chart" : "View as table"}
-          </button>
+          </Button>
         ) : (
           // Same "soon" treatment as an unbuilt nav item or PageHeader's
           // icons — visibly present, disabled, not a fake action.
-          <button
+          <Button
             type="button"
-            disabled
+            isDisabled
             title="View as table — coming soon"
             style={{
               fontSize: "0.72rem",
@@ -93,7 +94,7 @@ function ChartCard({
             }}
           >
             View as table
-          </button>
+          </Button>
         )}
       </div>
 
@@ -383,13 +384,13 @@ export default function OverviewScreen({ kpis, pipeline }: { kpis: DashboardKpis
                 {balancePick ? (
                   <>
                     <strong style={{ color: "#0f172a" }}>{balancePick}</strong>: {formatCompactInr(outstandingTotal)} outstanding ·{" "}
-                    <button
+                    <Button
                       type="button"
                       onClick={() => setBalancePick("")}
                       style={{ background: "none", border: "none", padding: 0, color: "#2563eb", cursor: "pointer", font: "inherit" }}
                     >
                       show everyone
-                    </button>
+                    </Button>
                   </>
                 ) : (
                   <>

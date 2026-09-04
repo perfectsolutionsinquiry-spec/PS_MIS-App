@@ -1,3 +1,5 @@
+import { Button } from "react-aria-components";
+
 // All-caps title + top-right icon buttons, used at the top of every screen
 // so they share one look. The icon buttons (email a report, export) are
 // deliberately disabled rather than wired to a fake action — same "soon"
@@ -6,9 +8,9 @@
 
 function ActionIcon({ path, title }: { path: string; title: string }) {
   return (
-    <button
+    <Button
       type="button"
-      disabled
+      isDisabled
       title={`${title} — coming soon`}
       style={{
         width: 36,
@@ -28,7 +30,7 @@ function ActionIcon({ path, title }: { path: string; title: string }) {
         strokeLinecap="round" strokeLinejoin="round">
         <path d={path} />
       </svg>
-    </button>
+    </Button>
   );
 }
 
@@ -67,10 +69,10 @@ export default function PageHeader({
       </div>
       <div style={{ display: "flex", gap: "0.5rem", flexShrink: 0 }}>
         {onRefresh && (
-          <button
+          <Button
             type="button"
             onClick={() => void onRefresh()}
-            disabled={refreshing}
+            isDisabled={refreshing}
             title="Refresh list"
             aria-label="Refresh list"
             style={{
@@ -90,7 +92,7 @@ export default function PageHeader({
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M20 11a8 8 0 0 0-14.9-3M4 5v4h4M4 13a8 8 0 0 0 14.9 3M20 19v-4h-4" />
             </svg>
-          </button>
+          </Button>
         )}
         <ActionIcon path={MAIL_PATH} title="Email report" />
         <ActionIcon path={EXPORT_PATH} title="Export" />
