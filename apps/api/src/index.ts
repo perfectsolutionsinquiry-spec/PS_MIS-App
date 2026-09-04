@@ -48,7 +48,7 @@ app.get("/me", { preHandler: requireAuth }, async (request) => {
 // session, as a second layer.
 app.get("/customers", { preHandler: [requireAuth, requireCapability("customers.read")] }, async (request) => {
   if (!pool) return { customers: [], note: "No database connected." };
-  return withTenantClient(request.identity!, async (client) => {
+  return withTenantClient(request.context!, async (client) => {
     // Note: the customers table's column is contact_number, not phone (see
     // db/migrations/0001_init.sql) — aliased below so the API's response
     // shape (and the frontend's Customer type) can stay as `phone` without
@@ -108,7 +108,7 @@ app.get("/customers/:id", { preHandler: [requireAuth, requireCapability("custome
   if (!pool) return reply.code(503).send({ error: "No database connected." });
   const { id } = request.params as { id: string };
 
-  return withTenantClient(request.identity!, async (client) => {
+  return withTenantClient(request.context!, async (client) => {
     const custResult = await client.query(
       `select c.*, b.name as bank_name
        from customers c
@@ -274,7 +274,7 @@ app.patch("/customers/:id", { preHandler: [requireAuth, requireCapability("custo
   if (setClauses.length === 0) return reply.code(400).send({ error: "No editable fields in request body." });
 
   values.push(id);
-  return withTenantClient(request.identity!, async (client) => {
+  return withTenantClient(request.context!, async (client) => {
     const result = await client.query(
       `update customers set ${setClauses.join(", ")} where id = $${values.length} returning id`,
       values
@@ -307,7 +307,7 @@ app.post("/customers", { preHandler: [requireAuth, requireCapability("customers.
     values.push(value);
   }
 
-  return withTenantClient(request.identity!, async (client) => {
+  return withTenantClient(request.context!, async (client) => {
     // A builder_user is always scoped to their own builder — identity.
     // builderId, never anything the client sends, same reasoning as
     // POST /customers/:id/payments below. Staff aren't scoped to any one
@@ -361,7 +361,7 @@ app.post("/customers/:id/payments", { preHandler: [requireAuth, requireCapabilit
     return reply.code(400).send({ error: "Enter an amount received (flat cost and/or GST) greater than zero." });
   }
 
-  return withTenantClient(request.identity!, async (client) => {
+  return withTenantClient(request.context!, async (client) => {
     // builder_id comes from the customer row this INSERT...SELECT actually
     // finds, never from the client — and that SELECT is itself RLS-scoped,
     // so a customer id from another builder simply matches zero rows here
@@ -399,7 +399,7 @@ app.post("/customers/:id/payments", { preHandler: [requireAuth, requireCapabilit
 // staff is a later addition, not this one.
 app.get("/dashboard/overview", { preHandler: [requireAuth, requireCapability("reports.read")] }, async (request) => {
   if (!pool) return { kpis: null, pipeline: null, note: "No database connected." };
-  return withTenantClient(request.identity!, async (client) => {
+  return withTenantClient(request.context!, async (client) => {
     const result = await client.query(`
       with due_milestones as (
         select coalesce(sum(amount_due), 0)::numeric as amount_due
@@ -636,7 +636,7 @@ app.get("/dashboard/daily-collection", { preHandler: [requireAuth, requireCapabi
   // parameter regardless.
   const daysBack = (weeks - 1) * 7;
 
-  return withTenantClient(request.identity!, async (client) => {
+  return withTenantClient(request.context!, async (client) => {
     const dailyResult = await client.query(
       `
       with weeks as (

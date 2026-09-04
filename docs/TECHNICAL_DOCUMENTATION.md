@@ -111,6 +111,10 @@ Customers behavior unless a separate request explicitly changes them.
 - A resolved `staff_users` identity receives the platform-staff capability
   bundle, preserving the pre-capability staff access model. Builder-user role
   values are mapped explicitly, with unknown values denied.
+- Protected requests also receive a `RequestContext` with `applicationId`,
+  verified `userId`, tenant ID (`null` for staff), correlation ID, identity,
+  and capabilities. Tenant-scoped routes pass this context into
+  `withTenantClient`; the existing `builder_id` RLS compatibility remains.
 
 The capability model, audit events, and tenant-neutral platform types are
 future implementation work; they must be introduced without weakening this

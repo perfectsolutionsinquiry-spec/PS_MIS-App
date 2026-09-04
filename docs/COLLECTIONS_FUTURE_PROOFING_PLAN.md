@@ -417,14 +417,14 @@ Status meanings:
 
 ### Phase 2 — Add tenant-aware request context
 
-- [ ] Create a request context containing verified user ID, tenant ID,
+- [x] Create a request context containing verified user ID, tenant ID,
   application ID, staff status, correlation ID, and capabilities.
-- [ ] Resolve the context only from the verified Clerk identity and local
+- [x] Resolve the context only from the verified Clerk identity and local
   database records.
-- [ ] Keep `builder_id` as the current Collections database compatibility
+- [x] Keep `builder_id` as the current Collections database compatibility
   field.
-- [ ] Use tenant context in new services and repositories.
-- [ ] Keep RLS session variables and the business query in the same database
+- [x] Use tenant context in existing tenant-scoped route database calls.
+- [x] Keep RLS session variables and the business query in the same database
   transaction.
 - [ ] Test that one tenant cannot read or mutate another tenant's data.
 

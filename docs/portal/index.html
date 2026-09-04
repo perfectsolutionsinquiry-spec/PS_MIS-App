@@ -266,6 +266,7 @@ const CATEGORIES = [
         <p>The server-owned catalogue is implemented in <code>apps/api/src/authorization.ts</code>. Existing <code>admin</code> and <code>staff</code> values are normalized as compatibility aliases; current login behavior is unchanged. Reversal and approval capabilities are intentionally separate from ordinary payment recording.</p>
         <p>Routes now enforce capabilities on the server: customer reads, creates, and edits; payment recording; reports; builder administration; and shared bank reference access. The frontend is not trusted to enforce these rules.</p>
         <p>Existing staff access is preserved because a resolved <code>staff_users</code> identity receives the platform-staff capability bundle. Unknown builder-user roles remain denied until explicitly mapped.</p>
+        <p>Protected requests now carry a server-created context containing the Collections application ID, verified user ID, tenant ID, correlation ID, identity, and capabilities. Tenant-scoped database calls use that context while retaining the current <code>builder_id</code> RLS behavior.</p>
         <h3>Approved delivery phases</h3>
         <ol>
          <li>Protect the existing experience.</li>

@@ -30,9 +30,19 @@ export type Identity =
       capabilities: ReadonlySet<CollectionsCapability>;
     };
 
+export type RequestContext = {
+  applicationId: "collections";
+  userId: string;
+  tenantId: string | null;
+  correlationId: string;
+  identity: Identity;
+  capabilities: ReadonlySet<CollectionsCapability>;
+};
+
 declare module "fastify" {
   interface FastifyRequest {
     identity?: Identity;
+    context?: RequestContext;
   }
 }
 
@@ -114,11 +124,19 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply) 
   }
 
   request.identity = identity;
+  request.context = {
+    applicationId: "collections",
+    userId: identity.kind === "staff" ? identity.staffId : identity.builderUserId,
+    tenantId: identity.kind === "staff" ? null : identity.builderId,
+    correlationId: request.id,
+    identity,
+    capabilities: identity.capabilities,
+  };
 }
 
 export function requireCapability(capability: CollectionsCapability) {
   return async (request: FastifyRequest, reply: FastifyReply) => {
-    if (!request.identity?.capabilities.has(capability)) {
+    if (!request.context?.capabilities.has(capability)) {
       return reply.code(403).send({
         error: `This account does not have the ${capability} capability.`,
       });
@@ -131,7 +149,7 @@ export function requireCapability(capability: CollectionsCapability) {
 // automatically scoped by Postgres itself, not by remembering a WHERE
 // clause. See db/migrations/0001_init.sql.
 export async function withTenantClient<T>(
-  identity: Identity,
+  context: RequestContext,
   fn: (client: import("pg").PoolClient) => Promise<T>
 ): Promise<T> {
   if (!pool) throw new Error("No database connected.");
@@ -152,12 +170,12 @@ export async function withTenantClient<T>(
     // query ran, for every identity, every time.
     await client.query("begin");
     try {
-      if (identity.kind === "staff") {
+      if (context.identity.kind === "staff") {
         await client.query("select set_config('app.is_staff', 'true', true)");
         await client.query("select set_config('app.current_builder_id', '', true)");
       } else {
         await client.query("select set_config('app.is_staff', '', true)");
-        await client.query("select set_config('app.current_builder_id', $1, true)", [identity.builderId]);
+        await client.query("select set_config('app.current_builder_id', $1, true)", [context.tenantId]);
       }
       const result = await fn(client);
       await client.query("commit");
