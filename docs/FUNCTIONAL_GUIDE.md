@@ -79,6 +79,12 @@ A live, searchable, sortable table of every customer you have access to.
   move columns between "Hidden" and "Visible," then Save. **This choice
   is remembered on this browser/device only** — it doesn't follow you to
   a different computer, and it isn't shared with anyone else who logs in.
+- **Advanced filters** — the funnel icon beside the gear opens a filter
+  builder. Choose a field, an operation (contains, starts with, ends with,
+  is, is not, is one of, is empty, or is not empty), and a value. Add
+  multiple AND conditions inside a group, add additional OR groups, group
+  the results by a field, and choose a sort direction. Nothing changes until
+  you press **Run**; **Cancel** leaves the current list unchanged.
 - **New customer** — opens a full page (not a popup) with a short form:
   name, agreement no., phone, email, stage — plus, for staff only, which
   builder. Required fields are marked with a red `*`. Everything else on

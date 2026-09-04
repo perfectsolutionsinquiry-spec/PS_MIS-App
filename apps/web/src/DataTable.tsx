@@ -40,6 +40,10 @@ export type ColumnDef<T> = {
 
 type SortState = { key: string; dir: "asc" | "desc" };
 type ColumnFilter = { operator: "contains" | "startsWith"; value: string };
+type AdvancedOperator = "contains" | "startsWith" | "endsWith" | "equals" | "notEquals" | "oneOf" | "isEmpty" | "isNotEmpty";
+type AdvancedCondition = { id: string; field: string; operator: AdvancedOperator; value: string };
+type AdvancedGroup = { id: string; conditions: AdvancedCondition[] };
+type AdvancedFilterState = { groups: AdvancedGroup[]; groupBy: string; sort: SortState | null };
 
 // Takes just the two fields it needs, not ColumnDef<T> itself — a
 // ColumnDef<T>[] is assignable here regardless of what T is (accessor's
@@ -123,6 +127,8 @@ export default function DataTable<T>({
   // effect, which is where that math actually happens.
   const [openFilter, setOpenFilter] = useState<{ key: string; anchor: { top: number; bottom: number; left: number } } | null>(null);
   const [configOpen, setConfigOpen] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [advancedFilter, setAdvancedFilter] = useState<AdvancedFilterState>({ groups: [], groupBy: "", sort: null });
   const [visibleKeys, setVisibleKeys] = useColumnVisibility(tableKey, columns);
 
   // Column order in the table follows visibleKeys' own order, not
@@ -154,15 +160,41 @@ export default function DataTable<T>({
       });
     }
 
-    if (sort) {
-      const col = columns.find((c) => c.key === sort.key);
+    if (advancedFilter.groups.length > 0) {
+      result = result.filter((row) =>
+        advancedFilter.groups.some((group) =>
+          group.conditions.every((condition) => {
+            const col = columns.find((c) => c.key === condition.field);
+            if (!col) return true;
+            const raw = String(col.accessor(row) ?? "");
+            const hay = raw.toLowerCase();
+            const needle = condition.value.trim().toLowerCase();
+            switch (condition.operator) {
+              case "contains": return hay.includes(needle);
+              case "startsWith": return hay.startsWith(needle);
+              case "endsWith": return hay.endsWith(needle);
+              case "equals": return hay === needle;
+              case "notEquals": return hay !== needle;
+              case "oneOf": return condition.value.split(",").map((v) => v.trim().toLowerCase()).filter(Boolean).includes(hay);
+              case "isEmpty": return raw.trim() === "";
+              case "isNotEmpty": return raw.trim() !== "";
+              default: return false;
+            }
+          })
+        )
+      );
+    }
+
+    const activeSort = advancedFilter.sort ?? sort;
+    if (activeSort) {
+      const col = columns.find((c) => c.key === activeSort.key);
       if (col) {
-        result = [...result].sort((a, b) => (sort.dir === "asc" ? compare(a, b, col) : -compare(a, b, col)));
+        result = [...result].sort((a, b) => (activeSort.dir === "asc" ? compare(a, b, col) : -compare(a, b, col)));
       }
     }
 
     return result;
-  }, [rows, globalQuery, columnFilters, sort, columns]);
+  }, [rows, globalQuery, columnFilters, sort, advancedFilter, columns]);
 
   function toggleSort(key: string) {
     setSort((prev) => {
@@ -171,7 +203,16 @@ export default function DataTable<T>({
     });
   }
 
-  const activeFilterCount = Object.values(columnFilters).filter((f) => f.value.trim()).length;
+  const activeFilterCount = Object.values(columnFilters).filter((f) => f.value.trim()).length
+    + advancedFilter.groups.reduce((count, group) => count + group.conditions.length, 0);
+  const groupedRows = advancedFilter.groupBy
+    ? filtered.reduce<Record<string, T[]>>((groups, row) => {
+        const col = columns.find((c) => c.key === advancedFilter.groupBy);
+        const label = String(col?.accessor(row) ?? "Empty");
+        (groups[label] ??= []).push(row);
+        return groups;
+      }, {})
+    : null;
 
   return (
     <div>
@@ -189,7 +230,7 @@ export default function DataTable<T>({
           {rows.length === 0
             ? emptyLabel
             : `Showing ${filtered.length} of ${rows.length} record${rows.length === 1 ? "" : "s"}`}
-          {activeFilterCount > 0 && ` · ${activeFilterCount} column filter${activeFilterCount === 1 ? "" : "s"} active`}
+          {activeFilterCount > 0 && ` · ${activeFilterCount} filter rule${activeFilterCount === 1 ? "" : "s"} active`}
         </p>
 
         <div style={{ display: "flex", gap: "0.6rem", alignItems: "center" }}>
@@ -209,6 +250,15 @@ export default function DataTable<T>({
               }}
             />
           )}
+          <button
+            type="button"
+            title="Build filters"
+            onClick={() => setAdvancedOpen(true)}
+            style={{ ...iconButtonStyle, color: advancedFilter.groups.length ? "#2563eb" : "#64748b" }}
+          >
+            <FilterIcon />
+            {advancedFilter.groups.length > 0 && <span style={{ fontSize: "0.7rem", marginLeft: "-0.25rem" }}>{advancedFilter.groups.length}</span>}
+          </button>
           <button
             type="button"
             title="Configure columns"
@@ -245,7 +295,8 @@ export default function DataTable<T>({
             <thead>
               <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
                 {visibleColumns.map((col) => {
-                  const isSorted = sort?.key === col.key;
+                  const activeSort = advancedFilter.sort ?? sort;
+                  const isSorted = activeSort?.key === col.key;
                   const hasFilter = !!columnFilters[col.key]?.value.trim();
                   return (
                     <th
@@ -267,7 +318,7 @@ export default function DataTable<T>({
                           style={{ cursor: col.sortable === false ? "default" : "pointer", userSelect: "none" }}
                         >
                           {col.label}
-                          {isSorted && <span style={{ marginLeft: "0.3rem" }}>{sort!.dir === "asc" ? "▲" : "▼"}</span>}
+                          {isSorted && <span style={{ marginLeft: "0.3rem" }}>{activeSort!.dir === "asc" ? "▲" : "▼"}</span>}
                         </span>
                         {col.searchable !== false && (
                           <button
@@ -318,7 +369,28 @@ export default function DataTable<T>({
                   </td>
                 </tr>
               ) : (
-                filtered.map((row) => (
+                (groupedRows ? Object.entries(groupedRows).flatMap(([groupLabel, groupRows]) => [
+                  <tr key={`group-${groupLabel}`} style={{ background: "#eff6ff" }}>
+                    <td colSpan={visibleColumns.length} style={{ padding: "0.55rem 1rem", color: "#1d4ed8", fontWeight: 700, fontSize: "0.78rem" }}>
+                      {columns.find((c) => c.key === advancedFilter.groupBy)?.label}: {groupLabel} <span style={{ fontWeight: 500 }}>({groupRows.length})</span>
+                    </td>
+                  </tr>,
+                  ...groupRows.map((row) => (
+                  <tr
+                    key={getRowId(row)}
+                    onClick={onRowClick ? () => onRowClick(row) : undefined}
+                    style={{ borderBottom: "1px solid #f1f5f9", cursor: onRowClick ? "pointer" : "default" }}
+                    onMouseEnter={(e) => onRowClick && (e.currentTarget.style.background = "#f8fafc")}
+                    onMouseLeave={(e) => onRowClick && (e.currentTarget.style.background = "transparent")}
+                  >
+                    {visibleColumns.map((col) => (
+                      <td key={col.key} style={{ padding: "0.65rem 1rem", color: "#475569" }}>
+                        {col.render ? col.render(row) : formatCell(col.accessor(row))}
+                      </td>
+                    ))}
+                  </tr>
+                  )),
+                ])) : filtered.map((row) => (
                   <tr
                     key={getRowId(row)}
                     onClick={onRowClick ? () => onRowClick(row) : undefined}
@@ -370,6 +442,17 @@ export default function DataTable<T>({
           onCancel={() => setConfigOpen(false)}
         />
       )}
+      {advancedOpen && (
+        <AdvancedFilterModal
+          columns={columns}
+          initial={advancedFilter}
+          onRun={(next) => {
+            setAdvancedFilter(next);
+            setAdvancedOpen(false);
+          }}
+          onCancel={() => setAdvancedOpen(false)}
+        />
+      )}
     </div>
   );
 }
@@ -377,6 +460,95 @@ export default function DataTable<T>({
 function formatCell(value: string | number | null): string {
   if (value === null || value === undefined || value === "") return "—";
   return String(value);
+}
+
+function FilterIcon() {
+  return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 5h16M7 12h10M10 19h4" /></svg>;
+}
+
+function AdvancedFilterModal<T>({
+  columns, initial, onRun, onCancel,
+}: {
+  columns: ColumnDef<T>[];
+  initial: AdvancedFilterState;
+  onRun: (state: AdvancedFilterState) => void;
+  onCancel: () => void;
+}) {
+  const [groups, setGroups] = useState<AdvancedGroup[]>(
+    initial.groups.length ? initial.groups : [{ id: "group-1", conditions: [{ id: "condition-1", field: columns[0]?.key ?? "", operator: "contains", value: "" }] }]
+  );
+  const [groupBy, setGroupBy] = useState(initial.groupBy);
+  const [sort, setSort] = useState<SortState | null>(initial.sort);
+  const updateCondition = (groupId: string, conditionId: string, patch: Partial<AdvancedCondition>) =>
+    setGroups((current) => current.map((group) => group.id !== groupId ? group : {
+      ...group,
+      conditions: group.conditions.map((condition) => condition.id === conditionId ? { ...condition, ...patch } : condition),
+    }));
+  const addCondition = (groupId: string) => setGroups((current) => current.map((group) => group.id !== groupId ? group : {
+    ...group,
+    conditions: [...group.conditions, { id: `condition-${Date.now()}`, field: columns[0]?.key ?? "", operator: "contains", value: "" }],
+  }));
+  const removeCondition = (groupId: string, conditionId: string) => setGroups((current) => current.map((group) => group.id !== groupId ? group : {
+    ...group,
+    conditions: group.conditions.filter((condition) => condition.id !== conditionId),
+  }).filter((group) => group.conditions.length > 0));
+  const addGroup = () => setGroups((current) => [...current, {
+    id: `group-${Date.now()}`,
+    conditions: [{ id: `condition-${Date.now()}`, field: columns[0]?.key ?? "", operator: "contains", value: "" }],
+  }]);
+  const selectStyle: CSSProperties = { padding: "0.45rem 0.5rem", border: "1px solid #cbd5e1", borderRadius: 6, background: "white", color: "#0f172a", fontSize: "0.82rem" };
+  return createPortal(
+    <div style={overlayStyle}>
+      <div style={{ ...modalStyle, width: "min(760px, calc(100vw - 2rem))" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: "1.1rem", color: "#0f172a" }}>Filter customers</h2>
+            <p style={{ margin: "0.2rem 0 0", color: "#64748b", fontSize: "0.78rem" }}>Conditions within a group use AND. Groups use OR.</p>
+          </div>
+          <button type="button" onClick={onCancel} style={closeButtonStyle}>×</button>
+        </div>
+        {groups.map((group, groupIndex) => (
+          <div key={group.id} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "0.75rem", marginBottom: "0.65rem" }}>
+            {group.conditions.map((condition, index) => (
+              <div key={condition.id} style={{ display: "grid", gridTemplateColumns: "1.1fr 1.1fr 1.5fr auto", gap: "0.45rem", alignItems: "center", marginBottom: index === group.conditions.length - 1 ? 0 : "0.45rem" }}>
+                <select value={condition.field} onChange={(e) => updateCondition(group.id, condition.id, { field: e.target.value })} style={selectStyle}>
+                  {columns.filter((column) => column.searchable !== false).map((column) => <option key={column.key} value={column.key}>{column.label}</option>)}
+                </select>
+                <select value={condition.operator} onChange={(e) => updateCondition(group.id, condition.id, { operator: e.target.value as AdvancedOperator })} style={selectStyle}>
+                  <option value="contains">contains</option><option value="startsWith">starts with</option><option value="endsWith">ends with</option>
+                  <option value="equals">is</option><option value="notEquals">is not</option><option value="oneOf">is one of</option>
+                  <option value="isEmpty">is empty</option><option value="isNotEmpty">is not empty</option>
+                </select>
+                {condition.operator === "isEmpty" || condition.operator === "isNotEmpty" ? <div style={{ color: "#94a3b8", fontSize: "0.8rem" }}>No value required</div> : <input value={condition.value} onChange={(e) => updateCondition(group.id, condition.id, { value: e.target.value })} placeholder={condition.operator === "oneOf" ? "Value 1, Value 2" : "Value"} style={{ ...selectStyle, width: "100%" }} />}
+                <button type="button" onClick={() => removeCondition(group.id, condition.id)} title="Remove condition" style={smallButtonStyle}>×</button>
+              </div>
+            ))}
+            <button type="button" onClick={() => addCondition(group.id)} style={textButtonStyle}>+ AND condition</button>
+            {groupIndex > 0 && <span style={{ color: "#94a3b8", fontSize: "0.75rem", marginLeft: "0.7rem" }}>OR group</span>}
+          </div>
+        ))}
+        <button type="button" onClick={addGroup} style={textButtonStyle}>+ OR group</button>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.7rem", marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid #e2e8f0" }}>
+          <label style={labelStyle}>Group rows by
+            <select value={groupBy} onChange={(e) => setGroupBy(e.target.value)} style={{ ...selectStyle, width: "100%", marginTop: "0.3rem" }}>
+              <option value="">No grouping</option>{columns.map((column) => <option key={column.key} value={column.key}>{column.label}</option>)}
+            </select>
+          </label>
+          <label style={labelStyle}>Sort rows by
+            <select value={sort?.key ?? ""} onChange={(e) => setSort(e.target.value ? { key: e.target.value, dir: sort?.dir ?? "asc" } : null)} style={{ ...selectStyle, width: "100%", marginTop: "0.3rem" }}>
+              <option value="">Keep current sort</option>{columns.map((column) => <option key={column.key} value={column.key}>{column.label}</option>)}
+            </select>
+          </label>
+        </div>
+        {sort && <button type="button" onClick={() => setSort({ ...sort, dir: sort.dir === "asc" ? "desc" : "asc" })} style={{ ...textButtonStyle, marginTop: "0.45rem" }}>Sort direction: {sort.dir === "asc" ? "Ascending" : "Descending"}</button>}
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.55rem", marginTop: "1.25rem" }}>
+          <button type="button" onClick={onCancel} style={secondaryBtnStyle}>Cancel</button>
+          <button type="button" onClick={() => onRun({ groups: groups.filter((group) => group.conditions.some((condition) => condition.operator === "isEmpty" || condition.operator === "isNotEmpty" || condition.value.trim())), groupBy, sort })} style={primaryBtnStyle}>Run</button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
 }
 
 // Portals into document.body and positions itself with `position: fixed`
@@ -669,6 +841,10 @@ export const modalStyle: CSSProperties = {
 };
 
 export const fieldLabelStyle: CSSProperties = { fontSize: "0.72rem", color: "#64748b", marginBottom: "0.25rem" };
+const labelStyle: CSSProperties = { display: "block", color: "#475569", fontSize: "0.78rem", fontWeight: 600 };
+const closeButtonStyle: CSSProperties = { border: "none", background: "transparent", color: "#64748b", fontSize: "1.5rem", cursor: "pointer", lineHeight: 1 };
+const smallButtonStyle: CSSProperties = { border: "1px solid #e2e8f0", borderRadius: 6, background: "white", color: "#64748b", width: 28, height: 28, cursor: "pointer", fontSize: "1rem" };
+const textButtonStyle: CSSProperties = { border: "none", background: "transparent", color: "#2563eb", padding: "0.2rem 0", cursor: "pointer", fontSize: "0.78rem", fontWeight: 600 };
 
 export const primaryBtnStyle: CSSProperties = {
   fontSize: "0.82rem",
