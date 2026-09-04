@@ -25,8 +25,12 @@ export function AriaDataTable({
   const columns = headers.map((header, index) => ({ id: `column-${index}`, header }));
   return (
     <Table aria-label="Data table" style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.82rem" }}>
-      <TableHeader columns={columns}>
-        {(column) => <Column id={column.id} isRowHeader={column.id === "column-0"}>{column.header}</Column>}
+      <TableHeader>
+        {columns.map((column) => (
+          <Column key={column.id} id={column.id} isRowHeader={column.id === "column-0"}>
+            {column.header}
+          </Column>
+        ))}
       </TableHeader>
       <TableBody items={rows.map((cells, index) => ({ id: `row-${index}`, cells }))}>
         {(row) => (
