@@ -75,6 +75,16 @@ Only the Collections application is being built:
 - Loan information already supported by the current application
 - Collections reporting and exports
 
+### Priority action list
+
+1. **P0 — Provider replaceability foundation:** keep authentication,
+   persistence, deployment, and business services behind internal contracts
+   before adding a second application or provider.
+2. **P1 — Audit and payment integrity:** make sensitive actions and financial
+   writes safe, traceable, and correct under retries.
+3. **P2 — Scale and portability:** add server-side pagination, tenant export,
+   and stronger adapter/conformance tests when the current boundaries are ready.
+
 ### Generalize now
 
 Generalize only the small foundations that every future application is
@@ -459,9 +469,9 @@ Status meanings:
 - [ ] Create repository interfaces for database operations.
 - [ ] Keep PostgreSQL as the reference adapter; do not add another database
   engine now.
-- [ ] Keep Clerk behind an identity verification boundary for new code. The
-  current authentication edge still imports Clerk directly; this remains
-  planned work, not a completed provider adapter.
+- [x] Keep Clerk behind an identity verification boundary for new code. The
+  current Clerk adapter is isolated in `apps/api/src/identity-provider.ts`;
+  replacing Clerk still requires a new adapter and migration/conformance work.
 - [ ] Prevent Collections code from importing future application modules.
 - [ ] Move existing routes incrementally, one use case at a time.
 - [ ] Run build, isolation, authorization, and migration tests after each

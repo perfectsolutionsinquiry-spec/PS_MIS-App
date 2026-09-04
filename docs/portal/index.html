@@ -249,6 +249,8 @@ const CATEGORIES = [
         <p>Scalability concerns more data, more users, more applications, and more operational load. The current experience stays stable while the server-side foundation addresses those measurable concerns.</p>
         <h3>Evidence rule</h3>
         <p>Add a future-proofing abstraction only for a handbook requirement, a current Collections need, a documented second-application/provider requirement, or a demonstrated production safety, isolation, financial, portability, or operational problem. Speculative framework layers remain deferred.</p>
+        <h3>Priority action list</h3>
+        <ol><li><strong>P0 — Provider replaceability foundation:</strong> keep authentication, persistence, deployment, and business services behind internal contracts before adding a second application or provider.</li><li><strong>P1 — Audit and payment integrity:</strong> make sensitive actions and financial writes safe, traceable, and correct under retries.</li><li><strong>P2 — Scale and portability:</strong> add pagination, tenant export, and stronger adapter/conformance tests when the boundaries are ready.</li></ol>
         <h3>What is reusable now</h3>
         <ul>
          <li>Tenant-aware request context</li>
@@ -325,7 +327,7 @@ const CATEGORIES = [
         <h3>Current API surface</h3>
         <p><code>/health</code>, <code>/db-check</code>, <code>/me</code>, <code>/customers</code>, <code>POST /customers</code>, <code>/customers/:id</code>, <code>PATCH /customers/:id</code>, <code>POST /customers/:id/payments</code>, <code>/banks</code>, <code>/builders</code>, <code>/dashboard/overview</code>, and <code>/dashboard/daily-collection</code>.</p>
         <h3>Identity and migration baseline</h3>
-        <p>Clerk verifies the session. <code>staff_users</code> identifies Perfect Solutions staff and <code>builder_users</code> identifies builder users. Tenant queries use transaction-scoped RLS through <code>withTenantClient</code>. Migrations are <code>0001_init.sql</code>, <code>0002_clerk_auth.sql</code>, <code>0003_force_rls.sql</code>, and <code>0004_settings_and_soft_delete.sql</code>.</p>
+        <p>Clerk verifies the session through the provider-neutral <code>IdentityProvider</code> port and current <code>identity-provider.ts</code> adapter. <code>staff_users</code> identifies Perfect Solutions staff and <code>builder_users</code> identifies builder users. Tenant queries use transaction-scoped RLS through <code>withTenantClient</code>. Migrations are <code>0001_init.sql</code>, <code>0002_clerk_auth.sql</code>, <code>0003_force_rls.sql</code>, and <code>0004_settings_and_soft_delete.sql</code>.</p>
         <h3>Customers regression baseline</h3>
         <p>The current header, count, refresh age, expandable search, column gear, advanced filter builder, URL-backed customer detail, exact <code>New</code> label, three detail tabs, React Aria controls, and branded visual system must remain unchanged during foundation work.</p>
       `},

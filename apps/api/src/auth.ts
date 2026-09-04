@@ -1,6 +1,6 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { createClerkClient, verifyToken } from "@clerk/backend";
 import { pool } from "./db.js";
+import { createClerkIdentityProvider, type IdentityProvider } from "./identity-provider.js";
 import {
   capabilitiesForRole,
   type CollectionsCapability,
@@ -47,7 +47,9 @@ declare module "fastify" {
 }
 
 const clerkSecretKey = process.env.CLERK_SECRET_KEY;
-const clerkClient = clerkSecretKey ? createClerkClient({ secretKey: clerkSecretKey }) : null;
+const identityProvider: IdentityProvider | null = clerkSecretKey
+  ? createClerkIdentityProvider(clerkSecretKey)
+  : null;
 
 async function lookupIdentity(clerkUserId: string): Promise<Identity | null> {
   if (!pool) return null;
@@ -94,7 +96,7 @@ async function lookupIdentity(clerkUserId: string): Promise<Identity | null> {
 // Never trusts a builder_id or "is staff" claim sent by the client itself —
 // only what this lookup, driven by Clerk's verified user id, produces.
 export async function requireAuth(request: FastifyRequest, reply: FastifyReply) {
-  if (!clerkClient || !clerkSecretKey) {
+  if (!identityProvider) {
     reply.code(500).send({ error: "Auth is not configured on this server yet (CLERK_SECRET_KEY missing)." });
     return reply;
   }
@@ -108,8 +110,8 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply) 
 
   let clerkUserId: string;
   try {
-    const verified = await verifyToken(token, { secretKey: clerkSecretKey });
-    clerkUserId = verified.sub;
+    const verified = await identityProvider.verifySession(token);
+    clerkUserId = verified.userId;
   } catch {
     reply.code(401).send({ error: "Session token is invalid or expired." });
     return reply;
