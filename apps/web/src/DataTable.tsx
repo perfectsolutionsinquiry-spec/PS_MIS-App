@@ -334,8 +334,7 @@ export default function DataTable<T>({
         <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, overflow: "auto" }}>
           <AriaTable aria-label="Customers" style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.87rem" }}>
             <AriaTableHeader>
-              <AriaRow style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
-                {visibleColumns.map((col) => {
+              {visibleColumns.map((col) => {
                   const activeSort = advancedFilter.sort?.[0] ?? sort;
                   const isSorted = activeSort?.key === col.key;
                   const hasFilter = !!columnFilters[col.key]?.value.trim();
@@ -397,10 +396,9 @@ export default function DataTable<T>({
                           </Button>
                         )}
                       </span>
-                    </AriaColumn>
-                  );
-                })}
-              </AriaRow>
+                  </AriaColumn>
+                );
+              })}
             </AriaTableHeader>
             <AriaTableBody>
               {filtered.length === 0 ? (
