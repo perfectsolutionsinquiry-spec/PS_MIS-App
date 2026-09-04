@@ -1,5 +1,5 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { pool } from "./db.js";
+import { database } from "./db.js";
 import { createClerkIdentityProvider, type IdentityProvider } from "./identity-provider.js";
 import {
   capabilitiesForRole,
@@ -52,9 +52,9 @@ const identityProvider: IdentityProvider | null = clerkSecretKey
   : null;
 
 async function lookupIdentity(clerkUserId: string): Promise<Identity | null> {
-  if (!pool) return null;
+  if (!database) return null;
 
-  const staff = await pool.query(
+  const staff = await database.query(
     "select id, full_name, role from staff_users where clerk_user_id = $1",
     [clerkUserId]
   );
@@ -72,7 +72,7 @@ async function lookupIdentity(clerkUserId: string): Promise<Identity | null> {
     };
   }
 
-  const builderUser = await pool.query(
+  const builderUser = await database.query(
     "select id, builder_id, full_name, role from builder_users where clerk_user_id = $1",
     [clerkUserId]
   );
@@ -154,8 +154,8 @@ export async function withTenantClient<T>(
   context: RequestContext,
   fn: (client: import("pg").PoolClient) => Promise<T>
 ): Promise<T> {
-  if (!pool) throw new Error("No database connected.");
-  const client = await pool.connect();
+  if (!database) throw new Error("No database connected.");
+  const client = await database.connect();
   try {
     // set_config(..., true) means "local to the current transaction" — that
     // third argument is deliberate: it's what lets us reset these safely
