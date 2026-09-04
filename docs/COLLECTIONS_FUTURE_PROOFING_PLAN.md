@@ -400,8 +400,8 @@ Status meanings:
 
 ### Phase 1 — Define Collections authorization
 
-- [ ] Define the capability catalogue in one server-owned module.
-- [ ] Define the approved Collections roles and their capability bundles.
+- [x] Define the capability catalogue in one server-owned module.
+- [x] Define the approved Collections roles and their capability bundles.
 - [ ] Introduce an internal membership/context type without changing the
   current login experience.
 - [ ] Enforce capabilities on the server, never in the frontend alone.

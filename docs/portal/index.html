@@ -263,6 +263,7 @@ const CATEGORIES = [
         <p>A tenant is one organization whose data is separated from another organization's data. Today, one builder is one tenant. A tenant is not a user, customer, project, or login.</p>
         <h3>Approved Collections roles</h3>
         <p>Platform Staff, Tenant Administrator, Collections Manager, Collections Operator, Finance Operator, Read-only User, and temporary reason-based Support Staff. Roles bundle exact capabilities such as <code>customers.read</code>, <code>payments.record</code>, and <code>payments.reverse</code>.</p>
+        <p>The server-owned catalogue is implemented in <code>apps/api/src/authorization.ts</code>. Existing <code>admin</code> and <code>staff</code> values are normalized as compatibility aliases; current login behavior is unchanged. Reversal and approval capabilities are intentionally separate from ordinary payment recording.</p>
         <h3>Approved delivery phases</h3>
         <ol>
          <li>Protect the existing experience.</li>
