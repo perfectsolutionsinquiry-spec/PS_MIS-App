@@ -320,7 +320,7 @@ export default function DataTable<T>({
           </Button>
           {onNew && (
             <Button type="button" className="new-record-button" onClick={onNew} style={primaryBtnStyle}>
-              + {newLabel}
+              {newLabel}
             </Button>
           )}
         </div>
