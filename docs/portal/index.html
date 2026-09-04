@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Perfect Solutions Docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+/* ── Design tokens ──────────────────────────────────────────────────
+   Reuses the live product's own palette (docs/TECHNICAL_DOCUMENTATION.md
+   and docs/FUNCTIONAL_GUIDE.md describe the app these pages document —
+   the doc site is skinned to match it, not invented fresh) and its real
+   brand font (IBM Plex Sans), paired with IBM Plex Mono — same type
+   family, used only for the things that are actually code-shaped here:
+   file paths, route names, SQL, function names. */
+:root {
+  --ink: #0f172a;
+  --ink-soft: #334155;
+  --muted: #64748b;
+  --accent: #2563eb;
+  --accent-soft: #eff6ff;
+  --surface: #ffffff;
+  --ground: #f8fafc;
+  --border: #e2e8f0;
+  --code-bg: #f1f5f9;
+  --good: #15803d;
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink: #e2e8f0;
+    --ink-soft: #cbd5e1;
+    --muted: #94a3b8;
+    --accent: #60a5fa;
+    --accent-soft: #16233b;
+    --surface: #0f172a;
+    --ground: #0a0f1a;
+    --border: #1e293b;
+    --code-bg: #111c30;
+    --good: #4ade80;
+  }
+}
+:root[data-theme="dark"] {
+  --ink: #e2e8f0;
+  --ink-soft: #cbd5e1;
+  --muted: #94a3b8;
+  --accent: #60a5fa;
+  --accent-soft: #16233b;
+  --surface: #0f172a;
+  --ground: #0a0f1a;
+  --border: #1e293b;
+  --code-bg: #111c30;
+  --good: #4ade80;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.6;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code, .mono { font-family: var(--font-mono); }
+h1, h2, h3 { text-wrap: balance; color: var(--ink); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.shell { display: flex; min-height: 100vh; }
+
+/* ── Left nav: category > article tree ─────────────────────────── */
+.nav {
+  width: 272px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+  padding: 1.25rem 1rem;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  overflow-y: auto;
+}
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0 0.25rem 1.1rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.nav-brand-mark {
+  width: 26px; height: 26px; border-radius: 6px;
+  background: var(--accent); flex-shrink: 0;
+}
+.nav-brand-text { font-weight: 700; font-size: 0.92rem; }
+.nav-brand-sub { font-size: 0.7rem; color: var(--muted); margin-top: 0.1rem; }
+.nav-category { margin-bottom: 1.4rem; }
+.nav-category-label {
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.07em;
+  text-transform: uppercase; color: var(--muted); padding: 0 0.6rem;
+  margin-bottom: 0.4rem;
+}
+.nav-link {
+  display: block; padding: 0.4rem 0.6rem; border-radius: 6px;
+  font-size: 0.85rem; color: var(--ink-soft);
+}
+.nav-link:hover { background: var(--ground); text-decoration: none; }
+.nav-link.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+
+/* ── Main column ────────────────────────────────────────────────── */
+.main { flex: 1; min-width: 0; }
+.topbar {
+  position: sticky; top: 0; z-index: 5;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 0.9rem 2rem;
+}
+.search-wrap { max-width: 640px; position: relative; }
+.search-input {
+  width: 100%; font: inherit; font-size: 0.92rem;
+  padding: 0.6rem 1rem 0.6rem 2.4rem; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--ground); color: var(--ink);
+}
+.search-input:focus { outline: none; border-color: var(--accent); }
+.search-icon { position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+
+.content { max-width: 760px; margin: 0 auto; padding: 2.25rem 2rem 5rem; }
+
+.breadcrumb { font-size: 0.78rem; color: var(--muted); margin-bottom: 0.6rem; }
+.breadcrumb .sep { margin: 0 0.35rem; }
+article h1 { font-size: 1.55rem; font-weight: 700; margin: 0 0 0.3rem; }
+.article-meta { font-size: 0.78rem; color: var(--muted); margin-bottom: 1.6rem; }
+article h2 { font-size: 1.1rem; font-weight: 700; margin: 2rem 0 0.75rem; padding-top: 0.5rem; border-top: 1px solid var(--border); }
+article h2:first-of-type { border-top: none; padding-top: 0; margin-top: 1rem; }
+article h3 { font-size: 0.95rem; font-weight: 600; margin: 1.4rem 0 0.5rem; }
+article p { margin: 0 0 1rem; color: var(--ink-soft); max-width: 66ch; }
+article ul, article ol { margin: 0 0 1rem; padding-left: 1.3rem; color: var(--ink-soft); max-width: 66ch; }
+article li { margin-bottom: 0.35rem; }
+article strong { color: var(--ink); }
+
+.table-wrap { overflow-x: auto; margin: 0 0 1.4rem; border: 1px solid var(--border); border-radius: 10px; }
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+th { text-align: left; background: var(--ground); color: var(--muted); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; padding: 0.6rem 0.85rem; border-bottom: 1px solid var(--border); }
+td { padding: 0.6rem 0.85rem; border-bottom: 1px solid var(--border); color: var(--ink-soft); vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+td code, th code { font-size: 0.82em; }
+
+code {
+  background: var(--code-bg); color: var(--ink); border-radius: 4px;
+  padding: 0.1em 0.4em; font-size: 0.87em;
+}
+pre {
+  background: var(--code-bg); border: 1px solid var(--border); border-radius: 10px;
+  padding: 1rem 1.1rem; overflow-x: auto; margin: 0 0 1.4rem; font-size: 0.8rem;
+}
+pre code { background: none; padding: 0; }
+pre.mermaid { font-family: var(--font-mono); color: var(--ink-soft); white-space: pre; }
+
+.callout {
+  border-left: 3px solid var(--accent); background: var(--accent-soft);
+  border-radius: 0 8px 8px 0; padding: 0.85rem 1.1rem; margin: 0 0 1.4rem;
+  font-size: 0.87rem; color: var(--ink-soft);
+}
+.callout strong { color: var(--ink); }
+
+/* ── Search results ─────────────────────────────────────────────── */
+.results-count { font-size: 0.82rem; color: var(--muted); margin-bottom: 1.2rem; }
+.result-card {
+  display: block; padding: 1rem 1.1rem; border: 1px solid var(--border);
+  border-radius: 10px; margin-bottom: 0.85rem; background: var(--surface);
+}
+.result-card:hover { border-color: var(--accent); text-decoration: none; }
+.result-title { font-size: 0.98rem; font-weight: 600; color: var(--accent); margin-bottom: 0.2rem; }
+.result-crumb { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.4rem; }
+.result-snippet { font-size: 0.85rem; color: var(--ink-soft); }
+.result-snippet mark { background: var(--accent-soft); color: var(--accent); border-radius: 3px; padding: 0 0.15em; }
+.empty-state { color: var(--muted); font-size: 0.9rem; padding: 2rem 0; }
+
+@media (max-width: 860px) {
+  .nav { position: fixed; left: -272px; transition: left 0.15s ease; z-index: 20; box-shadow: 0 0 0 100vmax rgba(0,0,0,0); }
+  .nav.open { left: 0; box-shadow: 4px 0 24px rgba(15,23,42,0.25); }
+  .menu-btn { display: inline-flex !important; }
+  .content { padding: 1.5rem 1.1rem 4rem; }
+  .topbar { padding: 0.8rem 1.1rem; }
+}
+.menu-btn {
+  display: none; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--ink); margin-right: 0.6rem; cursor: pointer; flex-shrink: 0;
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <nav class="nav" id="nav">
+    <div class="nav-brand">
+      <div class="nav-brand-mark"></div>
+      <div>
+        <div class="nav-brand-text">Perfect Solutions Docs</div>
+        <div class="nav-brand-sub">MIS / Builder Dashboard</div>
+      </div>
+    </div>
+    <div id="nav-tree"></div>
+  </nav>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="search-wrap" style="display:flex; align-items:center;">
+        <button class="menu-btn" id="menuBtn" title="Menu" aria-label="Toggle navigation">☰</button>
+        <div style="position:relative; flex:1;">
+          <span class="search-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          </span>
+          <input class="search-input" id="searchInput" type="text" placeholder="Search the docs — e.g. “RLS”, “record a payment”, “column visibility”…" autocomplete="off" />
+        </div>
+      </div>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+
+</div>
+
+<script>
+// ── Content ────────────────────────────────────────────────────────
+// Two categories, mirroring docs/TECHNICAL_DOCUMENTATION.md and
+// docs/FUNCTIONAL_GUIDE.md in the repo one level up from this file —
+// those two files stay the source of truth (plain markdown, diffable,
+// updated in the same commit as any code change per CLAUDE.md's
+// "Documentation practice" section); this page is a browsable,
+// searchable rendering of the same content; keep both in sync by hand
+// when either changes.
+const CATEGORIES = [
+  {
+    id: "technical",
+    label: "Technical Documentation",
+    articles: [
+      { id: "architecture", title: "Architecture at a glance", html: `
+        <p>The one rule everything else follows: <strong>the API decides, the frontend displays.</strong> No business number is computed in <code>apps/web</code>, and no access decision is made there either — every route re-derives who's asking from the verified Clerk token, never from anything the client claims.</p>
+        <pre class="mermaid">flowchart LR
+    subgraph Browser
+        FE["apps/web — Vite + React<br/>(Sidebar / Overview / Customers / CustomerDetail)"]
+    end
+    subgraph Render
+        API["apps/api — Fastify<br/>(auth.ts, index.ts)"]
+    end
+    subgraph Clerk
+        CL["Clerk — who is this person?"]
+    end
+    subgraph Neon
+        DB[("Postgres — the data,<br/>row-level security enforced")]
+    end
+
+    FE -- "Bearer token from useAuth().getToken()" --> API
+    API -- "verifyToken()" --> CL
+    API -- "set_config(app.is_staff / app.current_builder_id)<br/>then the real query, same transaction" --> DB
+    DB -- rows, already tenant-filtered --> API
+    API -- "JSON the frontend only displays" --> FE</pre>
+        <div class="callout"><strong>Stack:</strong> <code>apps/api</code> is Fastify + TypeScript on Render, talking to Postgres via <code>pg</code>. <code>apps/web</code> is Vite + React, using Clerk's prebuilt <code>&lt;SignIn/&gt;</code> and a Bearer token from <code>useAuth().getToken()</code> on every fetch.</div>
+      `},
+      { id: "schema", title: "Database schema map", html: `
+        <p>13 tables (<code>db/migrations/0001_init.sql</code>). Every tenant-scoped table carries <code>builder_id</code> directly, even where it could be derived through a join, so the same row-level-security rule applies everywhere without tracing through multiple tables.</p>
+        <h3>Entity relationships</h3>
+        <pre class="mermaid">erDiagram
+    builders ||--o{ builder_users : "has logins"
+    builders ||--o{ bank_accounts : owns
+    builders ||--o{ projects : owns
+    builders ||--o{ customers : "has customers"
+    projects ||--o{ towers : contains
+    towers ||--o{ payment_milestones : "schedule template"
+    towers ||--o{ inventory_units : contains
+    inventory_units ||--o| customers : "sold to (nullable)"
+    banks ||--o{ customers : "financing bank (nullable)"
+    customers ||--o{ co_applicants : has
+    customers ||--o{ customer_milestones : "owes on"
+    payment_milestones ||--o{ customer_milestones : "generates one row per customer"
+    customers ||--o{ recovery_transactions : "pays via"
+    staff_users ||--o{ customers : "assigned to (nullable)"</pre>
+        <h3>Table by table</h3>
+        <div class="table-wrap"><table>
+          <tr><th>Table</th><th>What it holds</th><th>RLS?</th></tr>
+          <tr><td><code>banks</code></td><td>Financing banks a loan can be against. Shared across every builder.</td><td>No — shared reference data</td></tr>
+          <tr><td><code>staff_users</code></td><td>Perfect Solutions' own employees. See every builder's data.</td><td>No — only reached by staff-gated code</td></tr>
+          <tr><td><code>builders</code></td><td>A builder company we work with (e.g. Shilpkaar).</td><td>No — the tenant root itself</td></tr>
+          <tr><td><code>builder_users</code></td><td>A builder's own admin/CRM logins.</td><td><strong>No, deliberately</strong> — see below</td></tr>
+          <tr><td><code>bank_accounts</code></td><td>A builder's own bank accounts.</td><td>Yes</td></tr>
+          <tr><td><code>projects</code></td><td>A builder's real-estate project (e.g. "Aarambh").</td><td>Yes</td></tr>
+          <tr><td><code>towers</code></td><td>One tower/building within a project.</td><td>Yes</td></tr>
+          <tr><td><code>payment_milestones</code></td><td>The payment-schedule <em>template</em> for a tower.</td><td>Yes</td></tr>
+          <tr><td><code>inventory_units</code></td><td>One flat/unit in a tower.</td><td>Yes</td></tr>
+          <tr><td><code>customers</code></td><td>The buyer — booking/agreement/loan/GST facts. ~35 columns.</td><td>Yes</td></tr>
+          <tr><td><code>co_applicants</code></td><td>A customer's co-applicant(s).</td><td>Yes</td></tr>
+          <tr><td><code>customer_milestones</code></td><td>One row per customer per milestone — due/paid status.</td><td>Yes</td></tr>
+          <tr><td><code>recovery_transactions</code></td><td>The payment ledger. Insert-only.</td><td>Yes</td></tr>
+        </table></div>
+        <h3>Row-level security, in one paragraph</h3>
+        <p>Every RLS table has one policy: <code>is_staff OR builder_id = current_builder_id</code>, <strong>forced</strong> (binds even to the table's owning DB role). The API sets <code>app.is_staff</code> / <code>app.current_builder_id</code> per request from the verified Clerk identity — never from the client. <code>builder_users</code> has RLS off on purpose: the query that discovers which builder a login belongs to must run before any tenant context exists.</p>
+        <div class="callout"><strong>Deliberately not in the schema:</strong> spreadsheet formula/derived columns (Basic Value formula, Agreement Value formula, per-stage percentages). Those belong in a future <code>packages/calc-engine</code>, computed from the raw inputs — storing the same fact twice is the bug class this avoids.</div>
+      `},
+      { id: "flows", title: "How data actually flows", html: `
+        <h3>Login → identity → tenant-scoped query</h3>
+        <pre class="mermaid">sequenceDiagram
+    participant U as User's browser
+    participant C as Clerk
+    participant A as API (auth.ts)
+    participant D as Postgres
+
+    U->>C: sign in
+    C-->>U: session token
+    U->>A: any request, Authorization: Bearer <token>
+    A->>C: verifyToken()
+    C-->>A: clerkUserId
+    A->>D: select from staff_users / builder_users where clerk_user_id = ?
+    D-->>A: identity (staff, or builder + builderId)
+    A->>D: begin; set_config(app.is_staff / app.current_builder_id)
+    A->>D: the actual query (same transaction)
+    D-->>A: rows, already filtered by RLS
+    A->>D: commit
+    A-->>U: JSON</pre>
+        <p>Where this lives: <code>requireAuth</code> and <code>withTenantClient</code>, both in <code>apps/api/src/auth.ts</code>. The <code>begin</code>/<code>commit</code> wrapping matters — see the file's own comment for the real bug it fixed.</p>
+        <h3>Opening a customer's record</h3>
+        <pre class="mermaid">sequenceDiagram
+    participant FE as CustomerDetailScreen.tsx
+    participant API as GET /customers/:id
+    participant DB as Postgres
+
+    FE->>API: fetch, with the customer id
+    API->>DB: customers row + bank name (one query)
+    API->>DB: co_applicants, recovery_transactions, customer_milestones (parallel)
+    DB-->>API: all four result sets
+    API->>API: parse every numeric/date column once
+    API->>API: compute totals — totalReceived, amountDue, balance
+    API-->>FE: { customer, coApplicants, payments, milestones, totals }</pre>
+        <p>A missing id and an id belonging to another builder both come back as the same 404 — telling them apart would leak whether an id exists on another tenant's data.</p>
+        <h3>Recording a payment</h3>
+        <pre class="mermaid">sequenceDiagram
+    participant FE as CustomerDetailScreen.tsx
+    participant API as POST /customers/:id/payments
+    participant DB as Postgres
+
+    FE->>API: { received_on, flat_cost_received, gst_received, remark, source }
+    API->>API: validate: date required, amount > 0
+    API->>DB: insert into recovery_transactions<br/>select builder_id from customers where id = ? (RLS-scoped)
+    DB-->>API: new row id (or zero rows if the customer id wasn't theirs)
+    API-->>FE: { ok, id }</pre>
+        <p>Insert-only, on purpose — a financial record is never edited or deleted, only reversed with a new entry (the reversal flow itself isn't built yet). <code>builder_id</code> is derived from the customer row itself, never trusted from the client.</p>
+      `},
+      { id: "routes", title: "API route reference", html: `
+        <p><code>apps/api/src/index.ts</code> unless noted. "RLS" = runs inside <code>withTenantClient</code> (tenant-scoped).</p>
+        <div class="table-wrap"><table>
+          <tr><th>Method &amp; path</th><th>What it does</th><th>RLS</th></tr>
+          <tr><td><code>GET /health</code></td><td>Liveness check for Render.</td><td>—</td></tr>
+          <tr><td><code>GET /db-check</code></td><td>Confirms the API can reach Postgres.</td><td>—</td></tr>
+          <tr><td><code>GET /me</code></td><td>Resolves the caller's identity (staff or builder).</td><td>—</td></tr>
+          <tr><td><code>GET /customers</code></td><td>List view columns, capped at 1000 (stopgap, not real pagination).</td><td>Yes</td></tr>
+          <tr><td><code>POST /customers</code></td><td>Creates a customer from NewCustomerModal's fields. Staff pass <code>builder_id</code> explicitly.</td><td>Yes</td></tr>
+          <tr><td><code>GET /customers/:id</code></td><td>Full record + co-applicants + payments + milestones + totals.</td><td>Yes</td></tr>
+          <tr><td><code>PATCH /customers/:id</code></td><td>Updates only fields in <code>EDITABLE_CUSTOMER_FIELDS</code> (hardcoded allowlist).</td><td>Yes</td></tr>
+          <tr><td><code>POST /customers/:id/payments</code></td><td>Records one payment. Insert-only.</td><td>Yes</td></tr>
+          <tr><td><code>GET /banks</code></td><td>Financing-bank dropdown options. Shared.</td><td>No</td></tr>
+          <tr><td><code>GET /builders</code></td><td>Builder-picker for staff creating a customer. <strong>Staff only.</strong></td><td>No (app-level check)</td></tr>
+          <tr><td><code>GET /dashboard/overview</code></td><td>The six Overview KPI tiles + all 4 pipeline chart cards, one SQL query.</td><td>Yes</td></tr>
+          <tr><td><code>GET /dashboard/daily-collection?weeks=N</code></td><td>Daily-collection chart data for a range.</td><td>Yes</td></tr>
+        </table></div>
+      `},
+      { id: "frontend-index", title: "Frontend file-by-file index", html: `
+        <p><code>apps/web/src/</code>. "Renders" = what a user sees; "Calls" = which API routes it talks to.</p>
+        <div class="table-wrap"><table>
+          <tr><th>File</th><th>Renders / does</th><th>Calls</th></tr>
+          <tr><td><code>main.tsx</code></td><td>Mounts the app, wraps in <code>ClerkProvider</code> (brand-font appearance), imports <code>index.css</code>.</td><td>—</td></tr>
+          <tr><td><code>App.tsx</code></td><td>Top-level shell — signed-out vs signed-in, initial fetches, screen routing state. <code>loadCustomers()</code> is reusable.</td><td><code>/me</code>, <code>/customers</code>, <code>/dashboard/overview</code></td></tr>
+          <tr><td><code>Sidebar.tsx</code></td><td>Dark nav rail, brand mark, collapse toggle, Clerk's <code>&lt;UserButton/&gt;</code>.</td><td>—</td></tr>
+          <tr><td><code>PageHeader.tsx</code></td><td>Shared all-caps title + 2 disabled icon buttons.</td><td>—</td></tr>
+          <tr><td><code>OverviewScreen.tsx</code></td><td>6 KPI tiles + 4 chart cards. <code>KpiTile</code>, <code>ChartCard</code> reusable pieces.</td><td><code>/dashboard/daily-collection</code></td></tr>
+          <tr><td><code>DonutChart.tsx</code> / <code>BarChart.tsx</code> / <code>LineChart.tsx</code></td><td>The four pipeline charts.</td><td>—</td></tr>
+          <tr><td><code>CustomersScreen.tsx</code></td><td>Supplies <code>CUSTOMER_COLUMNS</code> to <code>DataTable</code>; owns the New-customer modal state.</td><td>—</td></tr>
+          <tr><td><code>DataTable.tsx</code></td><td><strong>The generic list engine</strong> — sort, per-column filter, column visibility + order, New button. Every future table screen plugs into this.</td><td>—</td></tr>
+          <tr><td><code>NewCustomerModal.tsx</code></td><td>The "New" button's form.</td><td><code>/builders</code> (staff), <code>POST /customers</code></td></tr>
+          <tr><td><code>CustomerDetailScreen.tsx</code></td><td>Full record: summary tiles, 5 edit sections, co-applicants, record-a-payment, 2 tables.</td><td><code>GET /customers/:id</code>, <code>/banks</code>, <code>PATCH</code>, <code>POST /payments</code></td></tr>
+          <tr><td><code>types.ts</code></td><td>Every shared type, matching the API's response shapes exactly.</td><td>—</td></tr>
+          <tr><td><code>format.ts</code></td><td>Presentational-only formatting (Cr/L/K, percentages, UTC-safe dates). Never derives a figure.</td><td>—</td></tr>
+        </table></div>
+      `},
+      { id: "troubleshooting", title: "“Something broke — where do I look?”", html: `
+        <div class="table-wrap"><table>
+          <tr><th>Symptom</th><th>Likely file(s)</th></tr>
+          <tr><td>A builder can see another builder's data</td><td><code>db/migrations/0003_force_rls.sql</code>'s policy, or a new table that forgot <code>FORCE ROW LEVEL SECURITY</code></td></tr>
+          <tr><td>A builder login gets "0 customers" but staff sees data fine</td><td><code>withTenantClient</code> in <code>apps/api/src/auth.ts</code> — the begin/commit wrapping</td></tr>
+          <tr><td>A number on Overview looks wrong</td><td><code>GET /dashboard/overview</code> — every KPI is computed in one SQL query there</td></tr>
+          <tr><td>A field won't save on the customer detail page</td><td><code>EDITABLE_CUSTOMER_FIELDS</code> in <code>apps/api/src/index.ts</code> — the field must be on this allowlist</td></tr>
+          <tr><td>A new column/table's data isn't showing up</td><td>Check RLS is enabled+forced, and that a frontend type/column was actually added</td></tr>
+          <tr><td>Frontend changes aren't showing up after a push</td><td>Render's static-site build can take several minutes, plus Cloudflare's edge cache (<code>s-maxage=300</code>) — cache-bust with <code>?cb=</code> before assuming it's stuck</td></tr>
+          <tr><td>A <code>VITE_</code>-prefixed env var change isn't taking effect</td><td>Baked in at build time — trigger a manual redeploy, verify by the bundle's actual content</td></tr>
+        </table></div>
+      `},
+    ]
+  },
+  {
+    id: "functional",
+    label: "Functional Guide",
+    articles: [
+      { id: "what-is-this", title: "What this platform is", html: `
+        <p>A shared, private dashboard where <strong>Perfect Solutions staff</strong> log in and see every builder's customers, collections, and loan pipeline in one place, and <strong>a builder's own team</strong> logs in and sees only their own project's customers — never another builder's.</p>
+        <p>It's meant to replace the old Excel-based MIS workbook, with the same numbers, live and always up to date, instead of a file someone has to update and re-share by hand.</p>
+      `},
+      { id: "logging-in", title: "Logging in", html: `
+        <p>Sign-in is handled by Clerk (email/password or "Continue with Google") — Perfect Solutions never sees or stores a password. Once signed in, the platform automatically knows whether you're staff or a specific builder's team member, and shows the right data — there's no separate step to pick which builder you're viewing.</p>
+      `},
+      { id: "overview-screen", title: "The Overview screen", html: `
+        <p>The first thing you see after signing in — six number tiles and four charts, all live from the database.</p>
+        <div class="table-wrap"><table>
+          <tr><th>Tile</th><th>What it means</th></tr>
+          <tr><td>Total agreement value</td><td>Sum of every customer's agreement value</td></tr>
+          <tr><td>Total received</td><td>Every rupee actually collected so far</td></tr>
+          <tr><td>Balance outstanding</td><td>What's still owed on amounts that have actually come due — not the full eventual agreement value</td></tr>
+          <tr><td>Loan amount sanctioned</td><td>Total loan amount sanctioned across every loan case</td></tr>
+          <tr><td>Collection efficiency</td><td>Received vs. amount due, as a percentage</td></tr>
+          <tr><td>Units tracked</td><td>How many customers/units are in view</td></tr>
+        </table></div>
+        <div class="callout"><strong>"Amount due" vs. "agreement value":</strong> balance outstanding and collection efficiency are measured against milestones that have actually come due, not the full eventual agreement value — so this can be smaller than "total agreement value minus total received," on purpose.</div>
+        <p>The four charts (disbursement split, loan by bank, outstanding by customer, daily collection) all have a "View as table" option and hover for exact figures.</p>
+      `},
+      { id: "customers-screen", title: "The Customers screen", html: `
+        <p>A live, searchable, sortable table of every customer you have access to.</p>
+        <ul>
+          <li><strong>Sort</strong> — click any column header; click again to reverse.</li>
+          <li><strong>Search within a column</strong> — the ⋮ next to a column header, Contains or Starts with.</li>
+          <li><strong>Search everywhere</strong> — the box above the table searches name, phone, email, and stage at once.</li>
+          <li><strong>Choose which columns show, and their order</strong> — the gear icon opens a two-list picker (move columns between Hidden/Visible, and reorder the Visible list with the ↑/↓ buttons). <strong>Remembered on this browser/device only.</strong></li>
+          <li><strong>New customer</strong> — a short form (name, agreement no., phone, email, stage, plus a builder picker for staff). Everything else gets filled in by opening the new customer and editing it.</li>
+        </ul>
+        <p>Clicking any row opens that customer's full record.</p>
+      `},
+      { id: "customer-record", title: "A customer's record", html: `
+        <p>Opens when you click a row in the Customers table.</p>
+        <ul>
+          <li><strong>Summary tiles</strong> — agreement value, received, amount due, balance, for this one customer.</li>
+          <li><strong>Five sections</strong> of the full record — each with Edit → Save/Cancel.</li>
+          <li><strong>Co-applicants</strong> — shown, not yet editable.</li>
+          <li><strong>Record a payment</strong> — logs a new payment. Only ever <em>adds</em> an entry.</li>
+          <li><strong>Payment history</strong> and <strong>Payment milestones</strong> — two tables below the form.</li>
+        </ul>
+      `},
+      { id: "branding", title: "Branding", html: `
+        <p>The logo and colors are Perfect Solutions' real brand assets — the icon mark is the browser tab icon and the sidebar mark; the full logo-with-wordmark appears on the sign-in screen. All on-screen text uses IBM Plex Sans, the same family the printed brochure uses for its titles and labels.</p>
+      `},
+      { id: "deliberate", title: "Things that are deliberate, not bugs", html: `
+        <ul>
+          <li><strong>A payment can't be edited or deleted, only added.</strong> A ledger fix is a new correcting entry, not rewritten history.</li>
+          <li><strong>Recording a payment doesn't automatically update its milestone status</strong> — that reconciliation is separate, for now.</li>
+          <li><strong>PAN and Aadhaar show in full</strong>, to everyone who can open the record — a real open decision, not yet made.</li>
+          <li><strong>Column visibility is per-browser</strong>, not per-account.</li>
+          <li><strong>Greyed-out sidebar items and icon buttons</strong> are real, planned screens shown disabled on purpose — nothing pretends to work that doesn't.</li>
+        </ul>
+      `},
+      { id: "not-built-yet", title: "What's not built yet", html: `
+        <ul>
+          <li>Screens for anything other than Customers — Projects, Towers, Inventory, Banks, Bank Accounts exist in the database but have no screen yet.</li>
+          <li>Editing co-applicants from the customer record.</li>
+          <li>A reversal/correction flow for a wrongly-recorded payment.</li>
+          <li>Any admin screen for adding staff/builder logins — still done by hand.</li>
+          <li>Real pagination on the Customers list (shows up to 1,000 at once today).</li>
+        </ul>
+      `},
+    ]
+  }
+];
+
+// ── Plumbing ──────────────────────────────────────────────────────
+const allArticles = CATEGORIES.flatMap(cat =>
+  cat.articles.map(a => ({ ...a, categoryId: cat.id, categoryLabel: cat.label }))
+);
+const contentEl = document.getElementById("content");
+const navTreeEl = document.getElementById("nav-tree");
+const searchInput = document.getElementById("searchInput");
+
+function stripHtml(html) {
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html;
+  return (tmp.textContent || "").replace(/\s+/g, " ").trim();
+}
+
+function renderNav(activeId) {
+  navTreeEl.innerHTML = CATEGORIES.map(cat => `
+    <div class="nav-category">
+      <div class="nav-category-label">${cat.label}</div>
+      ${cat.articles.map(a => `<a class="nav-link${a.id === activeId ? " active" : ""}" href="#${a.id}">${a.title}</a>`).join("")}
+    </div>
+  `).join("");
+}
+
+function renderArticle(id) {
+  const article = allArticles.find(a => a.id === id) || allArticles[0];
+  renderNav(article.id);
+  contentEl.innerHTML = `
+    <div class="breadcrumb">${article.categoryLabel}<span class="sep">/</span>${article.title}</div>
+    <article>
+      <h1>${article.title}</h1>
+      ${article.html}
+    </article>
+  `;
+  if (window.mermaid) window.mermaid.run({ querySelector: ".mermaid" });
+  window.scrollTo(0, 0);
+}
+
+function renderSearch(query) {
+  navTreeEl.querySelectorAll(".nav-link").forEach(el => el.classList.remove("active"));
+  const q = query.trim().toLowerCase();
+  const results = allArticles
+    .map(a => {
+      const text = stripHtml(a.html);
+      const hay = (a.title + " " + text).toLowerCase();
+      const idx = hay.indexOf(q);
+      return idx === -1 ? null : { ...a, idx, text };
+    })
+    .filter(Boolean);
+
+  if (results.length === 0) {
+    contentEl.innerHTML = `
+      <div class="breadcrumb">Search results</div>
+      <h1 style="font-size:1.3rem;">Nothing found for “${query}”</h1>
+      <div class="empty-state">Try a different term — e.g. a business word like “collection efficiency” or a technical one like “RLS” or a file name like “DataTable”.</div>
+    `;
+    return;
+  }
+
+  contentEl.innerHTML = `
+    <div class="breadcrumb">Search results</div>
+    <h1 style="font-size:1.3rem;">Results for “${query}”</h1>
+    <div class="results-count">${results.length} article${results.length === 1 ? "" : "s"} match</div>
+    ${results.map(r => {
+      const snippetStart = Math.max(0, r.idx - 60);
+      let snippet = r.text.slice(snippetStart, r.idx + q.length + 80);
+      if (snippetStart > 0) snippet = "…" + snippet;
+      if (snippetStart + snippet.length < r.text.length) snippet += "…";
+      const escaped = snippet.replace(/</g, "&lt;");
+      const highlighted = escaped.replace(new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "ig"), (m) => `<mark>${m}</mark>`);
+      return `
+        <a class="result-card" href="#${r.id}">
+          <div class="result-crumb">${r.categoryLabel}</div>
+          <div class="result-title">${r.title}</div>
+          <div class="result-snippet">${highlighted}</div>
+        </a>
+      `;
+    }).join("")}
+  `;
+  window.scrollTo(0, 0);
+}
+
+function route() {
+  const hash = decodeURIComponent(location.hash.slice(1));
+  if (searchInput.value.trim()) return; // an active search owns the content pane until cleared
+  renderArticle(hash || allArticles[0].id);
+}
+
+searchInput.addEventListener("input", () => {
+  const q = searchInput.value;
+  if (q.trim()) {
+    history.replaceState(null, "", "#");
+    renderSearch(q);
+  } else {
+    route();
+  }
+});
+
+window.addEventListener("hashchange", () => {
+  if (!searchInput.value.trim()) route();
+});
+
+const menuBtn = document.getElementById("menuBtn");
+const navEl = document.getElementById("nav");
+menuBtn.addEventListener("click", () => navEl.classList.toggle("open"));
+navTreeEl.addEventListener("click", (e) => {
+  if (e.target.closest("a")) navEl.classList.remove("open");
+});
+
+route();
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.1/mermaid.min.js"></script>
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ startOnLoad: false, theme: "neutral", securityLevel: "loose" });
+    mermaid.run({ querySelector: ".mermaid" });
+  }
+</script>
+</body>
+</html>
