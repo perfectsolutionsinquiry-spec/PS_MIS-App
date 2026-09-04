@@ -50,6 +50,12 @@ up).
       first state that happens to work — e.g. a positioning fix checked
       against the column nearest the screen edge, not just the leftmost
       one; an empty-state checked with zero rows, not just a full table.
+- [ ] **Checked at responsive viewport sizes** — for any changed screen or
+      dialog, verify a wide desktop viewport, a tablet-sized viewport, and a
+      narrow mobile viewport. Confirm that fields, buttons, menus, tables,
+      and dialogs reflow or scroll without clipping, overflowing, or becoming
+      unusable. Record the checked viewport sizes in the change notes when
+      the UI behavior is materially affected.
 - [ ] **No new console errors** on load.
 
 ## 3. Deploy verification — after pushing
