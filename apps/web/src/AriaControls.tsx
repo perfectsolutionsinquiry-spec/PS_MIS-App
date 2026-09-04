@@ -11,6 +11,33 @@ import {
   TextArea,
   TextField,
 } from "react-aria-components";
+import { Cell, Column, Row, Table, TableBody, TableHeader } from "react-aria-components/Table";
+
+export function AriaDataTable({
+  headers,
+  rows,
+  emptyLabel = "No data yet.",
+}: {
+  headers: string[];
+  rows: Array<Array<ReactNode>>;
+  emptyLabel?: string;
+}) {
+  const columns = headers.map((header, index) => ({ id: `column-${index}`, header }));
+  return (
+    <Table aria-label="Data table" style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.82rem" }}>
+      <TableHeader columns={columns}>
+        {(column) => <Column id={column.id} isRowHeader={column.id === "column-0"}>{column.header}</Column>}
+      </TableHeader>
+      <TableBody items={rows.map((cells, index) => ({ id: `row-${index}`, cells }))}>
+        {(row) => (
+          <Row id={row.id}>
+            {row.cells.map((cell, index) => <Cell key={`${row.id}-${index}`}>{cell}</Cell>)}
+          </Row>
+        )}
+      </TableBody>
+    </Table>
+  );
+}
 
 export function AriaTextField({
   value,

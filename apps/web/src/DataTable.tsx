@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "react-aria-components";
+import { Dialog, Modal, ModalOverlay } from "react-aria-components";
 import { AriaCheckbox, AriaSelect, AriaTextField } from "./AriaControls";
+import { Cell as AriaCell, Column as AriaColumn, Row as AriaRow, Table as AriaTable, TableBody as AriaTableBody, TableHeader as AriaTableHeader } from "react-aria-components/Table";
 import type { CSSProperties, ReactNode } from "react";
 
 // A generic, config-driven list view — sortable columns, a per-column
@@ -224,7 +226,7 @@ export default function DataTable<T>({
       }, {})
     : null;
   const renderDataRow = (row: T) => (
-    <tr
+    <AriaRow
       key={getRowId(row)}
       onClick={onRowClick ? () => onRowClick(row) : undefined}
       style={{ borderBottom: "1px solid #f1f5f9", cursor: onRowClick ? "pointer" : "default" }}
@@ -232,11 +234,11 @@ export default function DataTable<T>({
       onMouseLeave={(e) => onRowClick && (e.currentTarget.style.background = "transparent")}
     >
       {visibleColumns.map((col) => (
-        <td key={col.key} style={{ padding: "0.65rem 1rem", color: "#475569" }}>
+        <AriaCell key={col.key} style={{ padding: "0.65rem 1rem", color: "#475569" }}>
           {col.render ? col.render(row) : formatCell(col.accessor(row))}
-        </td>
+        </AriaCell>
       ))}
-    </tr>
+    </AriaRow>
   );
 
   return (
@@ -329,15 +331,15 @@ export default function DataTable<T>({
         </div>
       ) : (
         <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, overflow: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.87rem" }}>
-            <thead>
-              <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+          <AriaTable aria-label="Customers" style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.87rem" }}>
+            <AriaTableHeader>
+              <AriaRow style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
                 {visibleColumns.map((col) => {
                   const activeSort = advancedFilter.sort?.[0] ?? sort;
                   const isSorted = activeSort?.key === col.key;
                   const hasFilter = !!columnFilters[col.key]?.value.trim();
                   return (
-                    <th
+                    <AriaColumn
                       key={col.key}
                       style={{
                         textAlign: "left",
@@ -394,32 +396,32 @@ export default function DataTable<T>({
                           </Button>
                         )}
                       </span>
-                    </th>
+                    </AriaColumn>
                   );
                 })}
-              </tr>
-            </thead>
-            <tbody>
+              </AriaRow>
+            </AriaTableHeader>
+            <AriaTableBody>
               {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={visibleColumns.length} style={{ padding: "2rem 1rem", textAlign: "center", color: "#94a3b8" }}>
+                <AriaRow id="empty">
+                  <AriaCell colSpan={visibleColumns.length} style={{ padding: "2rem 1rem", textAlign: "center", color: "#94a3b8" }}>
                     No records match the current search/filters.
-                  </td>
-                </tr>
+                  </AriaCell>
+                </AriaRow>
               ) : (
                 groupedRows
                   ? Object.entries(groupedRows).flatMap(([groupLabel, groupRows]) => [
-                      <tr key={`group-${groupLabel}`} style={{ background: "#eff6ff" }}>
-                        <td colSpan={visibleColumns.length} style={{ padding: "0.55rem 1rem", color: "#1d4ed8", fontWeight: 700, fontSize: "0.78rem" }}>
+                      <AriaRow id={`group-${groupLabel}`} key={`group-${groupLabel}`} style={{ background: "#eff6ff" }}>
+                        <AriaCell colSpan={visibleColumns.length} style={{ padding: "0.55rem 1rem", color: "#1d4ed8", fontWeight: 700, fontSize: "0.78rem" }}>
                           {columns.find((c) => c.key === advancedFilter.groupBy)?.label}: {groupLabel} <span style={{ fontWeight: 500 }}>({groupRows.length})</span>
-                        </td>
-                      </tr>,
+                        </AriaCell>
+                      </AriaRow>,
                       ...groupRows.map(renderDataRow),
                     ])
                   : filtered.map(renderDataRow)
               )}
-            </tbody>
-          </table>
+            </AriaTableBody>
+          </AriaTable>
         </div>
       )}
 
@@ -735,8 +737,9 @@ function ColumnConfigModal<T>({
   }
 
   return (
-    <div style={overlayStyle} onClick={onCancel}>
-      <div style={{ ...modalStyle, width: "min(760px, calc(100vw - 2rem))" }} onClick={(e) => e.stopPropagation()}>
+    <ModalOverlay isOpen onOpenChange={(isOpen) => !isOpen && onCancel()} style={overlayStyle}>
+      <Modal style={{ ...modalStyle, width: "min(760px, calc(100vw - 2rem))" }}>
+        <Dialog aria-label="Personalize fields">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem" }}>
           <div>
             <div style={{ fontWeight: 700, fontSize: "1.15rem", color: "#0f172a", marginBottom: "0.35rem" }}>Personalize fields</div>
@@ -795,8 +798,9 @@ function ColumnConfigModal<T>({
           </Button>
           </div>
         </div>
-      </div>
-    </div>
+        </Dialog>
+      </Modal>
+    </ModalOverlay>
   );
 }
 

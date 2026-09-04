@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Button } from "react-aria-components";
 import { AriaSelect, AriaTextArea, AriaTextField } from "./AriaControls";
+import { AriaDataTable } from "./AriaControls";
+import { Tab, TabList, Tabs } from "react-aria-components";
 import type { CSSProperties, ReactNode } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import type { Bank, CustomerDetailResponse, Milestone, Payment } from "./types";
@@ -177,12 +179,12 @@ const TABS: { key: TabKey; label: string }[] = [
 
 function TabBar({ active, onChange }: { active: TabKey; onChange: (key: TabKey) => void }) {
   return (
-    <div style={{ display: "flex", gap: "1.5rem", borderBottom: "1px solid #e2e8f0", marginBottom: "1.25rem" }}>
+    <Tabs selectedKey={active} onSelectionChange={(key) => onChange(String(key) as TabKey)}>
+      <TabList aria-label="Customer record sections" style={{ display: "flex", gap: "1.5rem", borderBottom: "1px solid #e2e8f0", marginBottom: "1.25rem" }}>
       {TABS.map((t) => (
-        <Button
+        <Tab
           key={t.key}
-          type="button"
-          onClick={() => onChange(t.key)}
+          id={t.key}
           style={{
             background: "none",
             border: "none",
@@ -196,9 +198,10 @@ function TabBar({ active, onChange }: { active: TabKey; onChange: (key: TabKey) 
           }}
         >
           {t.label}
-        </Button>
+        </Tab>
       ))}
-    </div>
+      </TabList>
+    </Tabs>
   );
 }
 
@@ -528,26 +531,7 @@ export default function CustomerDetailScreen({ customerId, onBack }: { customerI
               {detail.payments.length === 0 ? (
                 <div style={{ color: "#94a3b8", fontSize: "0.85rem" }}>No payments recorded yet.</div>
               ) : (
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.82rem" }}>
-                  <thead>
-                    <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
-                      {["Date", "Flat cost", "GST", "Source", "Remark"].map((h) => (
-                        <th key={h} style={{ textAlign: "left", padding: "0.4rem 0.5rem", color: "#64748b", fontWeight: 600, fontSize: "0.72rem", textTransform: "uppercase" }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {detail.payments.map((p) => (
-                      <tr key={p.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                        <td style={{ padding: "0.4rem 0.5rem" }}>{p.receivedOn}</td>
-                        <td style={{ padding: "0.4rem 0.5rem" }}>{formatCompactInr(p.flatCostReceived)}</td>
-                        <td style={{ padding: "0.4rem 0.5rem" }}>{formatCompactInr(p.gstReceived)}</td>
-                        <td style={{ padding: "0.4rem 0.5rem", color: "#475569" }}>{p.source ?? "—"}</td>
-                        <td style={{ padding: "0.4rem 0.5rem", color: "#475569" }}>{p.remark ?? "—"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <AriaDataTable headers={["Date", "Flat cost", "GST", "Source", "Remark"]} rows={detail.payments.map((p) => [p.receivedOn, formatCompactInr(p.flatCostReceived), formatCompactInr(p.gstReceived), p.source ?? "—", p.remark ?? "—"])} />
               )}
             </div>
           </Section>
@@ -555,25 +539,7 @@ export default function CustomerDetailScreen({ customerId, onBack }: { customerI
           {detail.milestones.length > 0 && (
             <Section title="Payment milestones">
               <div style={{ gridColumn: "1 / -1" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.82rem" }}>
-                  <thead>
-                    <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
-                      {["Milestone", "Amount due", "Due date", "Status"].map((h) => (
-                        <th key={h} style={{ textAlign: "left", padding: "0.4rem 0.5rem", color: "#64748b", fontWeight: 600, fontSize: "0.72rem", textTransform: "uppercase" }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {detail.milestones.map((m) => (
-                      <tr key={m.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                        <td style={{ padding: "0.4rem 0.5rem" }}>{m.milestoneName}</td>
-                        <td style={{ padding: "0.4rem 0.5rem" }}>{formatCompactInr(m.amountDue)}</td>
-                        <td style={{ padding: "0.4rem 0.5rem" }}>{m.dueDate ?? "—"}</td>
-                        <td style={{ padding: "0.4rem 0.5rem" }}>{m.status}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <AriaDataTable headers={["Milestone", "Amount due", "Due date", "Status"]} rows={detail.milestones.map((m) => [m.milestoneName, formatCompactInr(m.amountDue), m.dueDate ?? "—", m.status])} />
               </div>
             </Section>
           )}

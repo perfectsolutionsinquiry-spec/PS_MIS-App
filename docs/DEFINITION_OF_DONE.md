@@ -66,6 +66,10 @@ up).
       interactive controls. Keep semantic tables, SVG charts, layout
       containers, and third-party authentication widgets when React Aria does
       not provide an equivalent.
+- [ ] **Supported structural controls use React Aria** — use React Aria
+      `Table`, `Tabs`, `Dialog`, `Modal`, and `Popover` primitives where the
+      application has an equivalent interactive surface. Do not recreate
+      those accessibility behaviors with bespoke markup.
 
 ## 3. Deploy verification — after pushing
 

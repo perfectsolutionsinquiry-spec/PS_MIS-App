@@ -3,6 +3,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import { Button } from "react-aria-components";
 import { AriaSelect } from "./AriaControls";
+import { AriaDataTable } from "./AriaControls";
 import type { DashboardKpis, DailyCollectionRow, PipelineData } from "./types";
 import { formatCompactInr, formatPct, formatShortDate } from "./format";
 import PageHeader from "./PageHeader";
@@ -103,60 +104,7 @@ function ChartCard({
 
       {table && showTable ? (
         <div style={{ maxHeight: 340, overflowY: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.8rem" }}>
-            <thead>
-              <tr>
-                {table.headers.map((h, i) => (
-                  <th
-                    key={i}
-                    style={{
-                      position: "sticky",
-                      top: 0,
-                      background: "white",
-                      textAlign: i === 0 ? "left" : "right",
-                      padding: "0.4rem 0.5rem",
-                      color: "#64748b",
-                      fontWeight: 600,
-                      fontSize: "0.72rem",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.03em",
-                      borderBottom: "1px solid #e2e8f0",
-                    }}
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {table.rows.length === 0 ? (
-                <tr>
-                  <td colSpan={table.headers.length} style={{ padding: "1.5rem", textAlign: "center", color: "#94a3b8" }}>
-                    No data yet.
-                  </td>
-                </tr>
-              ) : (
-                table.rows.map((row, i) => (
-                  <tr key={i}>
-                    {row.map((cell, j) => (
-                      <td
-                        key={j}
-                        style={{
-                          textAlign: j === 0 ? "left" : "right",
-                          padding: "0.35rem 0.5rem",
-                          borderBottom: "1px solid #f1f5f9",
-                          color: j === 0 ? "#0f172a" : "#475569",
-                          fontVariantNumeric: j === 0 ? undefined : "tabular-nums",
-                        }}
-                      >
-                        {cell}
-                      </td>
-                    ))}
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+          <AriaDataTable headers={table.headers} rows={table.rows} />
         </div>
       ) : (
         children
