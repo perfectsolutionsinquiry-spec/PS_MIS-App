@@ -43,7 +43,7 @@ type ColumnFilter = { operator: "contains" | "startsWith"; value: string };
 type AdvancedOperator = "contains" | "startsWith" | "endsWith" | "equals" | "notEquals" | "oneOf" | "isEmpty" | "isNotEmpty";
 type AdvancedCondition = { id: string; field: string; operator: AdvancedOperator; value: string };
 type AdvancedGroup = { id: string; conditions: AdvancedCondition[] };
-type AdvancedFilterState = { groups: AdvancedGroup[]; groupBy: string; sort: SortState | null };
+type AdvancedFilterState = { groups: AdvancedGroup[]; groupBy: string; sort: SortState[] | null };
 
 // Takes just the two fields it needs, not ColumnDef<T> itself — a
 // ColumnDef<T>[] is assignable here regardless of what T is (accessor's
@@ -185,12 +185,17 @@ export default function DataTable<T>({
       );
     }
 
-    const activeSort = advancedFilter.sort ?? sort;
-    if (activeSort) {
-      const col = columns.find((c) => c.key === activeSort.key);
-      if (col) {
-        result = [...result].sort((a, b) => (activeSort.dir === "asc" ? compare(a, b, col) : -compare(a, b, col)));
-      }
+    const activeSorts = advancedFilter.sort !== null ? advancedFilter.sort : sort ? [sort] : [];
+    if (activeSorts.length > 0) {
+      result = [...result].sort((a, b) => {
+        for (const activeSort of activeSorts) {
+          const col = columns.find((c) => c.key === activeSort.key);
+          if (!col) continue;
+          const difference = activeSort.dir === "asc" ? compare(a, b, col) : -compare(a, b, col);
+          if (difference !== 0) return difference;
+        }
+        return 0;
+      });
     }
 
     return result;
@@ -310,7 +315,7 @@ export default function DataTable<T>({
             <thead>
               <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
                 {visibleColumns.map((col) => {
-                  const activeSort = advancedFilter.sort ?? sort;
+                  const activeSort = advancedFilter.sort?.[0] ?? sort;
                   const isSorted = activeSort?.key === col.key;
                   const hasFilter = !!columnFilters[col.key]?.value.trim();
                   return (
@@ -467,7 +472,7 @@ function AdvancedFilterModal<T>({
     initial.groups.length ? initial.groups : [{ id: "group-1", conditions: [{ id: "condition-1", field: columns[0]?.key ?? "", operator: "contains", value: "" }] }]
   );
   const [groupBy, setGroupBy] = useState(initial.groupBy);
-  const [sort, setSort] = useState<SortState | null>(initial.sort);
+  const [sorts, setSorts] = useState<SortState[]>(initial.sort ?? []);
   const updateCondition = (groupId: string, conditionId: string, patch: Partial<AdvancedCondition>) =>
     setGroups((current) => current.map((group) => group.id !== groupId ? group : {
       ...group,
@@ -539,16 +544,25 @@ function AdvancedFilterModal<T>({
               <option value="">No grouping</option>{columns.map((column) => <option key={column.key} value={column.key}>{column.label}</option>)}
             </select>
           </label>
-          <label style={labelStyle}>Sort rows by
-            <select value={sort?.key ?? ""} onChange={(e) => setSort(e.target.value ? { key: e.target.value, dir: sort?.dir ?? "asc" } : null)} style={{ ...selectStyle, width: "100%", marginTop: "0.3rem" }}>
-              <option value="">Keep current sort</option>{columns.map((column) => <option key={column.key} value={column.key}>{column.label}</option>)}
-            </select>
-          </label>
+          <div style={labelStyle}>Sort by
+            {sorts.map((sort, index) => (
+              <div key={`${sort.key}-${index}`} className="advanced-filter-sort-row" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto auto", gap: "0.4rem", marginTop: "0.3rem", alignItems: "center" }}>
+                <select value={sort.key} onChange={(e) => setSorts((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, key: e.target.value } : item))} style={{ ...selectStyle, width: "100%" }}>
+                  {columns.map((column) => <option key={column.key} value={column.key}>{column.label}</option>)}
+                </select>
+                <button type="button" title={sort.dir === "asc" ? "Sort ascending" : "Sort descending"} onClick={() => setSorts((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, dir: item.dir === "asc" ? "desc" : "asc" } : item))} style={sortDirectionButtonStyle}>
+                  {sort.dir === "asc" ? "↑" : "↓"}
+                </button>
+                <button type="button" title="Remove sort" onClick={() => setSorts((current) => current.filter((_, itemIndex) => itemIndex !== index))} style={sortRemoveButtonStyle}>×</button>
+              </div>
+            ))}
+            {sorts.length === 0 && <div style={{ ...selectStyle, color: "#94a3b8", marginTop: "0.3rem" }}>None</div>}
+            <button type="button" onClick={() => setSorts((current) => [...current, { key: columns[0]?.key ?? "", dir: "asc" }])} style={addSortButtonStyle}>+ Add Sort</button>
+          </div>
         </div>
-        {sort && <button type="button" onClick={() => setSort({ ...sort, dir: sort.dir === "asc" ? "desc" : "asc" })} style={{ ...textButtonStyle, marginTop: "0.45rem" }}>Sort direction: {sort.dir === "asc" ? "Ascending" : "Descending"}</button>}
         <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.55rem", marginTop: "1.25rem" }}>
           <button type="button" onClick={onCancel} style={secondaryBtnStyle}>Cancel</button>
-          <button type="button" onClick={() => onRun({ groups: groups.filter((group) => group.conditions.some((condition) => condition.operator === "isEmpty" || condition.operator === "isNotEmpty" || condition.value.trim())), groupBy, sort })} style={primaryBtnStyle}>Run</button>
+          <button type="button" onClick={() => onRun({ groups: groups.filter((group) => group.conditions.some((condition) => condition.operator === "isEmpty" || condition.operator === "isNotEmpty" || condition.value.trim())), groupBy, sort: sorts })} style={primaryBtnStyle}>Run</button>
         </div>
       </div>
     </div>,
@@ -852,6 +866,9 @@ const smallButtonStyle: CSSProperties = { border: "1px solid #e2e8f0", borderRad
 const attachedRemoveButtonStyle: CSSProperties = { position: "absolute", right: 5, top: "50%", transform: "translateY(-50%)", border: "none", background: "transparent", color: "#64748b", cursor: "pointer", fontSize: "1rem", lineHeight: 1, padding: "0.1rem" };
 const logicButtonStyle: CSSProperties = { border: "1px solid #64748b", borderRadius: 5, background: "white", color: "#334155", cursor: "pointer", fontSize: "0.78rem", fontWeight: 600, padding: "0.36rem 0.6rem", textTransform: "lowercase" };
 const outlineButtonStyle: CSSProperties = { border: "1px solid #64748b", borderRadius: 5, background: "white", color: "#334155", cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, padding: "0.4rem 0.65rem" };
+const sortDirectionButtonStyle: CSSProperties = { border: "1px solid #64748b", borderRadius: 5, background: "#f8fafc", color: "#334155", cursor: "pointer", fontSize: "1rem", fontWeight: 700, width: 38, height: 32 };
+const sortRemoveButtonStyle: CSSProperties = { border: "none", background: "transparent", color: "#64748b", cursor: "pointer", fontSize: "1rem", lineHeight: 1, padding: "0.2rem" };
+const addSortButtonStyle: CSSProperties = { display: "block", width: "100%", border: "1px solid #2563eb", borderRadius: 5, background: "white", color: "#2563eb", cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, padding: "0.4rem 0.65rem", marginTop: "0.45rem" };
 const textButtonStyle: CSSProperties = { border: "none", background: "transparent", color: "#2563eb", padding: "0.2rem 0", cursor: "pointer", fontSize: "0.78rem", fontWeight: 600 };
 
 export const primaryBtnStyle: CSSProperties = {

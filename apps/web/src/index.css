@@ -49,10 +49,23 @@ body {
   .advanced-filter-options {
     grid-template-columns: minmax(0, 1fr) !important;
   }
+
+  .advanced-filter-sort-row {
+    grid-template-columns: minmax(0, 1fr) auto auto !important;
+  }
 }
 
 @media (max-width: 420px) {
   .advanced-filter-condition {
     grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .advanced-filter-sort-row {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .advanced-filter-sort-row > button {
+    grid-column: auto !important;
+    grid-row: auto !important;
   }
 }
