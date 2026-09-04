@@ -79,8 +79,9 @@ A live, searchable, sortable table of every customer you have access to.
   move columns between "Hidden" and "Visible," then Save. **This choice
   is remembered on this browser/device only** — it doesn't follow you to
   a different computer, and it isn't shared with anyone else who logs in.
-- **New customer** — opens a short form (name, agreement no., phone,
-  email, stage — plus, for staff only, which builder). Everything else on
+- **New customer** — opens a full page (not a popup) with a short form:
+  name, agreement no., phone, email, stage — plus, for staff only, which
+  builder. Required fields are marked with a red `*`. Everything else on
   the record gets filled in afterwards by opening the new customer and
   editing it, same as any existing customer.
 
@@ -88,23 +89,34 @@ Clicking any row opens that customer's full record.
 
 ## 5. A customer's record
 
-Opens when you click a row in the Customers table.
+Opens when you click a row in the Customers table. The name, client no.,
+stage, and the **Edit** / **Save** / **Cancel** buttons sit in a header
+that stays the same no matter which of the 3 tabs below is open —
+clicking Edit always takes you to the Details tab, since that's the only
+one with anything editable on it.
 
-- **Summary tiles** at the top — agreement value, received, amount due,
-  balance — same definitions as the Overview tiles, for this one customer.
-- **Five sections** of the full record — Identity & contact, Dates,
-  Pricing & costs, Funding & loan, Status — each with an **Edit** button
-  that switches the whole page into edit mode; **Save** commits every
-  changed field at once, **Cancel** discards.
+**Overview** — a dashboard for this one customer:
+- **Summary tiles** — agreement value, received, amount due, balance —
+  same definitions as the Overview screen's tiles, for this customer only.
+- **Milestone progress** — a bar showing how many of this customer's
+  payment milestones are paid, partially paid, due, or not yet due.
+- **Recent payments** — the last 3 payments received, newest first.
+
+**Details** — the full record, in five sections (Identity & contact,
+Dates, Pricing & costs, Funding & loan, Status). **Edit** switches all
+five into edit mode at once; **Save** commits every changed field
+together, **Cancel** discards.
+
+**Related records** — everything tied to this customer:
 - **Co-applicants** — shown, but not yet editable from this screen.
 - **Record a payment** — logs a new payment against this customer
   (date, flat cost received, GST received, source, remark). This only
   ever *adds* a new entry — a payment already recorded can't be edited or
   deleted from here (see §7, "Why payments can only be added, not
   changed").
-- **Payment history** and **Payment milestones** — two tables below the
-  form: every payment ever recorded, and the tower's payment schedule for
-  this customer (what's due, when, and its status).
+- **Payment history** and **Payment milestones** — two tables: every
+  payment ever recorded, and the tower's payment schedule for this
+  customer (what's due, when, and its status).
 
 ## 6. Branding
 

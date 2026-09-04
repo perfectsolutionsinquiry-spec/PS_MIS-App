@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { useAuth } from "@clerk/clerk-react";
-import type { Bank, CustomerDetailResponse } from "./types";
+import type { Bank, CustomerDetailResponse, Milestone, Payment } from "./types";
 import { formatCompactInr } from "./format";
 
 const API_URL = import.meta.env.VITE_API_URL as string;
@@ -171,11 +171,54 @@ export function Section({ title, children }: { title: string; children: ReactNod
   );
 }
 
+// The record's own 3 tabs — Overview (a dashboard of this one customer),
+// Details (the full editable record, what this screen used to show as
+// one long page), Related records (everything joined to this customer:
+// co-applicants, the payment ledger, the milestone schedule). Local to
+// this screen for now — the first table with a record detail view at
+// all, so there's nothing yet to generalize this against; if a second
+// table's record view needs the same 3-tab shape, pull this out the same
+// way DataTable.tsx got pulled out of CustomersScreen.tsx.
+type TabKey = "overview" | "details" | "related";
+const TABS: { key: TabKey; label: string }[] = [
+  { key: "overview", label: "Overview" },
+  { key: "details", label: "Details" },
+  { key: "related", label: "Related records" },
+];
+
+function TabBar({ active, onChange }: { active: TabKey; onChange: (key: TabKey) => void }) {
+  return (
+    <div style={{ display: "flex", gap: "1.5rem", borderBottom: "1px solid #e2e8f0", marginBottom: "1.25rem" }}>
+      {TABS.map((t) => (
+        <button
+          key={t.key}
+          type="button"
+          onClick={() => onChange(t.key)}
+          style={{
+            background: "none",
+            border: "none",
+            borderBottom: active === t.key ? "2px solid #2563eb" : "2px solid transparent",
+            marginBottom: "-1px",
+            padding: "0 0 0.65rem",
+            fontSize: "0.85rem",
+            fontWeight: active === t.key ? 600 : 500,
+            color: active === t.key ? "#2563eb" : "#64748b",
+            cursor: "pointer",
+          }}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function CustomerDetailScreen({ customerId, onBack }: { customerId: string; onBack: () => void }) {
   const { getToken } = useAuth();
   const [detail, setDetail] = useState<CustomerDetailResponse | null>(null);
   const [banks, setBanks] = useState<Bank[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<TabKey>("overview");
 
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
@@ -210,6 +253,7 @@ export default function CustomerDetailScreen({ customerId, onBack }: { customerI
 
   useEffect(() => {
     load();
+    setTab("overview");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customerId]);
 
@@ -224,6 +268,11 @@ export default function CustomerDetailScreen({ customerId, onBack }: { customerI
     setForm(next);
     setSaveError(null);
     setEditing(true);
+    // Edit only ever touches Details-tab fields, but the button lives in
+    // the shared header (see the render below) — jump there so turning
+    // edit mode on always actually shows something editable, regardless
+    // of which tab was open when Edit was clicked.
+    setTab("details");
   }
 
   async function save() {
@@ -300,6 +349,9 @@ export default function CustomerDetailScreen({ customerId, onBack }: { customerI
     <div>
       <button type="button" onClick={onBack} style={backLinkStyle}>← Back to customers</button>
 
+      {/* Name, client no., stage, and the Edit/Save/Cancel controls are
+          global to the record — same header regardless of which of the
+          3 tabs below is open, not something each tab repeats. */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginTop: "1rem", marginBottom: "1.25rem", gap: "1rem", flexWrap: "wrap" }}>
         <div>
           <h1 style={{ fontSize: "1.3rem", fontWeight: 700, color: "#0f172a", margin: 0 }}>{c.fullName}</h1>
@@ -325,209 +377,227 @@ export default function CustomerDetailScreen({ customerId, onBack }: { customerI
         </div>
       )}
 
-      {/* Summary tiles — same "amount due" definition as the Overview KPI
-          tiles (due/partial/paid milestones only), computed once server-side
-          in GET /customers/:id's `totals`, not re-derived here. */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "1rem", marginBottom: "1.25rem" }}>
-        <SummaryTile label="Agreement value" value={formatCompactInr(c.agreementValue ?? 0)} />
-        <SummaryTile label="Received to date" value={formatCompactInr(detail.totals.totalReceived)} good />
-        <SummaryTile label="Amount due" value={formatCompactInr(detail.totals.amountDue)} />
-        <SummaryTile label="Balance" value={formatCompactInr(detail.totals.balance)} />
-      </div>
+      <TabBar active={tab} onChange={setTab} />
 
-      <Section title="Identity & contact">
-        {IDENTITY_FIELDS.map((def) => (
-          <FieldRow
-            key={def.key}
-            def={def}
-            value={editing && def.dbKey ? form[def.dbKey] ?? "" : (c[def.key] as string | number | null)}
-            editing={editing}
-            onChange={(k, v) => setForm((f) => ({ ...f, [k]: v }))}
-            banks={banks}
-          />
-        ))}
-      </Section>
-
-      <Section title="Dates">
-        {DATE_FIELDS.map((def) => (
-          <FieldRow
-            key={def.key}
-            def={def}
-            value={editing && def.dbKey ? form[def.dbKey] ?? "" : (c[def.key] as string | number | null)}
-            editing={editing}
-            onChange={(k, v) => setForm((f) => ({ ...f, [k]: v }))}
-            banks={banks}
-          />
-        ))}
-      </Section>
-
-      <Section title="Pricing & costs">
-        {COST_FIELDS.map((def) => (
-          <FieldRow
-            key={def.key}
-            def={def}
-            value={editing && def.dbKey ? form[def.dbKey] ?? "" : (c[def.key] as string | number | null)}
-            editing={editing}
-            onChange={(k, v) => setForm((f) => ({ ...f, [k]: v }))}
-            banks={banks}
-          />
-        ))}
-      </Section>
-
-      <Section title="Funding & loan">
-        {FUNDING_FIELDS.map((def) =>
-          def.key === "bankId" ? (
-            <div key={def.key}>
-              <div style={{ fontSize: "0.72rem", color: "#64748b", marginBottom: "0.25rem" }}>{def.label}</div>
-              {editing ? (
-                <select
-                  value={form.bank_id ?? ""}
-                  onChange={(e) => setForm((f) => ({ ...f, bank_id: e.target.value }))}
-                  style={inputStyle}
-                >
-                  <option value="">—</option>
-                  {banks.map((b) => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
-              ) : (
-                <div style={{ fontSize: "0.85rem", color: "#0f172a", minHeight: "1.5rem", paddingTop: "0.15rem" }}>
-                  {c.bankName ?? "—"}
-                </div>
-              )}
-            </div>
-          ) : (
-            <FieldRow
-              key={def.key}
-              def={def}
-              value={editing && def.dbKey ? form[def.dbKey] ?? "" : (c[def.key] as string | number | null)}
-              editing={editing}
-              onChange={(k, v) => setForm((f) => ({ ...f, [k]: v }))}
-              banks={banks}
-            />
-          )
-        )}
-      </Section>
-
-      <Section title="Status">
-        {STATUS_FIELDS.map((def) => (
-          <FieldRow
-            key={def.key}
-            def={def}
-            value={editing && def.dbKey ? form[def.dbKey] ?? "" : (c[def.key] as string | number | null)}
-            editing={editing}
-            onChange={(k, v) => setForm((f) => ({ ...f, [k]: v }))}
-            banks={banks}
-          />
-        ))}
-      </Section>
-
-      {detail.coApplicants.length > 0 && (
-        <Section title="Co-applicants">
-          <div style={{ gridColumn: "1 / -1" }}>
-            {detail.coApplicants.map((ca) => (
-              <div key={ca.id} style={{ fontSize: "0.85rem", color: "#0f172a", padding: "0.4rem 0", borderBottom: "1px solid #f1f5f9" }}>
-                <strong>{ca.fullName}</strong>{ca.relation ? ` · ${ca.relation}` : ""}
-                {ca.contactNumber ? ` · ${ca.contactNumber}` : ""}
-              </div>
-            ))}
-            <div style={{ fontSize: "0.72rem", color: "#94a3b8", marginTop: "0.5rem" }}>
-              Read-only for now — editing co-applicants isn't built yet.
-            </div>
+      {tab === "overview" && (
+        <>
+          {/* Same "amount due" definition as the Overview screen's KPI
+              tiles (due/partial/paid milestones only), computed once
+              server-side in GET /customers/:id's `totals`, not re-derived
+              here. */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "1rem", marginBottom: "1.25rem" }}>
+            <SummaryTile label="Agreement value" value={formatCompactInr(c.agreementValue ?? 0)} />
+            <SummaryTile label="Received to date" value={formatCompactInr(detail.totals.totalReceived)} good />
+            <SummaryTile label="Amount due" value={formatCompactInr(detail.totals.amountDue)} />
+            <SummaryTile label="Balance" value={formatCompactInr(detail.totals.balance)} />
           </div>
-        </Section>
+
+          <MilestoneProgress milestones={detail.milestones} />
+          <RecentPayments payments={detail.payments} />
+        </>
       )}
 
-      <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, padding: "1.25rem", marginBottom: "1rem" }}>
-        <div style={{ fontWeight: 700, fontSize: "0.85rem", color: "#0f172a", marginBottom: "0.25rem" }}>Record a payment</div>
-        <div style={{ fontSize: "0.76rem", color: "#94a3b8", marginBottom: "1rem" }}>
-          Adds to the ledger below. This never edits or removes an existing entry — see docs/LAUNCH_GUARDRAILS.md.
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "0.75rem", marginBottom: "0.75rem" }}>
-          <div>
-            <div style={fieldLabelStyle}>Date received</div>
-            <input type="date" value={paymentForm.received_on} onChange={(e) => setPaymentForm((f) => ({ ...f, received_on: e.target.value }))} style={inputStyle} />
-          </div>
-          <div>
-            <div style={fieldLabelStyle}>Flat cost received</div>
-            <input type="number" value={paymentForm.flat_cost_received} onChange={(e) => setPaymentForm((f) => ({ ...f, flat_cost_received: e.target.value }))} style={inputStyle} />
-          </div>
-          <div>
-            <div style={fieldLabelStyle}>GST received</div>
-            <input type="number" value={paymentForm.gst_received} onChange={(e) => setPaymentForm((f) => ({ ...f, gst_received: e.target.value }))} style={inputStyle} />
-          </div>
-          <div>
-            <div style={fieldLabelStyle}>Source</div>
-            <input type="text" placeholder="e.g. Own funds, LIC Housing" value={paymentForm.source} onChange={(e) => setPaymentForm((f) => ({ ...f, source: e.target.value }))} style={inputStyle} />
-          </div>
-          <div style={{ gridColumn: "1 / -1" }}>
-            <div style={fieldLabelStyle}>Remark</div>
-            <input type="text" value={paymentForm.remark} onChange={(e) => setPaymentForm((f) => ({ ...f, remark: e.target.value }))} style={inputStyle} />
-          </div>
-        </div>
-        {paymentError && (
-          <div style={{ color: "#b91c1c", background: "#fef2f2", border: "1px solid #fecaca", padding: "0.5rem 0.75rem", borderRadius: 6, marginBottom: "0.75rem", fontSize: "0.8rem" }}>
-            {paymentError}
-          </div>
-        )}
-        <button type="button" onClick={recordPayment} disabled={paymentSaving} style={primaryBtnStyle}>
-          {paymentSaving ? "Recording…" : "Record payment"}
-        </button>
-      </div>
+      {tab === "details" && (
+        <>
+          <Section title="Identity & contact">
+            {IDENTITY_FIELDS.map((def) => (
+              <FieldRow
+                key={def.key}
+                def={def}
+                value={editing && def.dbKey ? form[def.dbKey] ?? "" : (c[def.key] as string | number | null)}
+                editing={editing}
+                onChange={(k, v) => setForm((f) => ({ ...f, [k]: v }))}
+                banks={banks}
+              />
+            ))}
+          </Section>
 
-      <Section title={`Payment history (${detail.payments.length})`}>
-        <div style={{ gridColumn: "1 / -1" }}>
-          {detail.payments.length === 0 ? (
-            <div style={{ color: "#94a3b8", fontSize: "0.85rem" }}>No payments recorded yet.</div>
-          ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.82rem" }}>
-              <thead>
-                <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
-                  {["Date", "Flat cost", "GST", "Source", "Remark"].map((h) => (
-                    <th key={h} style={{ textAlign: "left", padding: "0.4rem 0.5rem", color: "#64748b", fontWeight: 600, fontSize: "0.72rem", textTransform: "uppercase" }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {detail.payments.map((p) => (
-                  <tr key={p.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                    <td style={{ padding: "0.4rem 0.5rem" }}>{p.receivedOn}</td>
-                    <td style={{ padding: "0.4rem 0.5rem" }}>{formatCompactInr(p.flatCostReceived)}</td>
-                    <td style={{ padding: "0.4rem 0.5rem" }}>{formatCompactInr(p.gstReceived)}</td>
-                    <td style={{ padding: "0.4rem 0.5rem", color: "#475569" }}>{p.source ?? "—"}</td>
-                    <td style={{ padding: "0.4rem 0.5rem", color: "#475569" }}>{p.remark ?? "—"}</td>
-                  </tr>
+          <Section title="Dates">
+            {DATE_FIELDS.map((def) => (
+              <FieldRow
+                key={def.key}
+                def={def}
+                value={editing && def.dbKey ? form[def.dbKey] ?? "" : (c[def.key] as string | number | null)}
+                editing={editing}
+                onChange={(k, v) => setForm((f) => ({ ...f, [k]: v }))}
+                banks={banks}
+              />
+            ))}
+          </Section>
+
+          <Section title="Pricing & costs">
+            {COST_FIELDS.map((def) => (
+              <FieldRow
+                key={def.key}
+                def={def}
+                value={editing && def.dbKey ? form[def.dbKey] ?? "" : (c[def.key] as string | number | null)}
+                editing={editing}
+                onChange={(k, v) => setForm((f) => ({ ...f, [k]: v }))}
+                banks={banks}
+              />
+            ))}
+          </Section>
+
+          <Section title="Funding & loan">
+            {FUNDING_FIELDS.map((def) =>
+              def.key === "bankId" ? (
+                <div key={def.key}>
+                  <div style={{ fontSize: "0.72rem", color: "#64748b", marginBottom: "0.25rem" }}>{def.label}</div>
+                  {editing ? (
+                    <select
+                      value={form.bank_id ?? ""}
+                      onChange={(e) => setForm((f) => ({ ...f, bank_id: e.target.value }))}
+                      style={inputStyle}
+                    >
+                      <option value="">—</option>
+                      {banks.map((b) => (
+                        <option key={b.id} value={b.id}>{b.name}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div style={{ fontSize: "0.85rem", color: "#0f172a", minHeight: "1.5rem", paddingTop: "0.15rem" }}>
+                      {c.bankName ?? "—"}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <FieldRow
+                  key={def.key}
+                  def={def}
+                  value={editing && def.dbKey ? form[def.dbKey] ?? "" : (c[def.key] as string | number | null)}
+                  editing={editing}
+                  onChange={(k, v) => setForm((f) => ({ ...f, [k]: v }))}
+                  banks={banks}
+                />
+              )
+            )}
+          </Section>
+
+          <Section title="Status">
+            {STATUS_FIELDS.map((def) => (
+              <FieldRow
+                key={def.key}
+                def={def}
+                value={editing && def.dbKey ? form[def.dbKey] ?? "" : (c[def.key] as string | number | null)}
+                editing={editing}
+                onChange={(k, v) => setForm((f) => ({ ...f, [k]: v }))}
+                banks={banks}
+              />
+            ))}
+          </Section>
+        </>
+      )}
+
+      {tab === "related" && (
+        <>
+          {detail.coApplicants.length > 0 && (
+            <Section title="Co-applicants">
+              <div style={{ gridColumn: "1 / -1" }}>
+                {detail.coApplicants.map((ca) => (
+                  <div key={ca.id} style={{ fontSize: "0.85rem", color: "#0f172a", padding: "0.4rem 0", borderBottom: "1px solid #f1f5f9" }}>
+                    <strong>{ca.fullName}</strong>{ca.relation ? ` · ${ca.relation}` : ""}
+                    {ca.contactNumber ? ` · ${ca.contactNumber}` : ""}
+                  </div>
                 ))}
-              </tbody>
-            </table>
+                <div style={{ fontSize: "0.72rem", color: "#94a3b8", marginTop: "0.5rem" }}>
+                  Read-only for now — editing co-applicants isn't built yet.
+                </div>
+              </div>
+            </Section>
           )}
-        </div>
-      </Section>
 
-      {detail.milestones.length > 0 && (
-        <Section title="Payment milestones">
-          <div style={{ gridColumn: "1 / -1" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.82rem" }}>
-              <thead>
-                <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
-                  {["Milestone", "Amount due", "Due date", "Status"].map((h) => (
-                    <th key={h} style={{ textAlign: "left", padding: "0.4rem 0.5rem", color: "#64748b", fontWeight: 600, fontSize: "0.72rem", textTransform: "uppercase" }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {detail.milestones.map((m) => (
-                  <tr key={m.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                    <td style={{ padding: "0.4rem 0.5rem" }}>{m.milestoneName}</td>
-                    <td style={{ padding: "0.4rem 0.5rem" }}>{formatCompactInr(m.amountDue)}</td>
-                    <td style={{ padding: "0.4rem 0.5rem" }}>{m.dueDate ?? "—"}</td>
-                    <td style={{ padding: "0.4rem 0.5rem" }}>{m.status}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, padding: "1.25rem", marginBottom: "1rem" }}>
+            <div style={{ fontWeight: 700, fontSize: "0.85rem", color: "#0f172a", marginBottom: "0.25rem" }}>Record a payment</div>
+            <div style={{ fontSize: "0.76rem", color: "#94a3b8", marginBottom: "1rem" }}>
+              Adds to the ledger below. This never edits or removes an existing entry — see docs/LAUNCH_GUARDRAILS.md.
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "0.75rem", marginBottom: "0.75rem" }}>
+              <div>
+                <div style={fieldLabelStyle}>Date received</div>
+                <input type="date" value={paymentForm.received_on} onChange={(e) => setPaymentForm((f) => ({ ...f, received_on: e.target.value }))} style={inputStyle} />
+              </div>
+              <div>
+                <div style={fieldLabelStyle}>Flat cost received</div>
+                <input type="number" value={paymentForm.flat_cost_received} onChange={(e) => setPaymentForm((f) => ({ ...f, flat_cost_received: e.target.value }))} style={inputStyle} />
+              </div>
+              <div>
+                <div style={fieldLabelStyle}>GST received</div>
+                <input type="number" value={paymentForm.gst_received} onChange={(e) => setPaymentForm((f) => ({ ...f, gst_received: e.target.value }))} style={inputStyle} />
+              </div>
+              <div>
+                <div style={fieldLabelStyle}>Source</div>
+                <input type="text" placeholder="e.g. Own funds, LIC Housing" value={paymentForm.source} onChange={(e) => setPaymentForm((f) => ({ ...f, source: e.target.value }))} style={inputStyle} />
+              </div>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <div style={fieldLabelStyle}>Remark</div>
+                <input type="text" value={paymentForm.remark} onChange={(e) => setPaymentForm((f) => ({ ...f, remark: e.target.value }))} style={inputStyle} />
+              </div>
+            </div>
+            {paymentError && (
+              <div style={{ color: "#b91c1c", background: "#fef2f2", border: "1px solid #fecaca", padding: "0.5rem 0.75rem", borderRadius: 6, marginBottom: "0.75rem", fontSize: "0.8rem" }}>
+                {paymentError}
+              </div>
+            )}
+            <button type="button" onClick={recordPayment} disabled={paymentSaving} style={primaryBtnStyle}>
+              {paymentSaving ? "Recording…" : "Record payment"}
+            </button>
           </div>
-        </Section>
+
+          <Section title={`Payment history (${detail.payments.length})`}>
+            <div style={{ gridColumn: "1 / -1" }}>
+              {detail.payments.length === 0 ? (
+                <div style={{ color: "#94a3b8", fontSize: "0.85rem" }}>No payments recorded yet.</div>
+              ) : (
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.82rem" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+                      {["Date", "Flat cost", "GST", "Source", "Remark"].map((h) => (
+                        <th key={h} style={{ textAlign: "left", padding: "0.4rem 0.5rem", color: "#64748b", fontWeight: 600, fontSize: "0.72rem", textTransform: "uppercase" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {detail.payments.map((p) => (
+                      <tr key={p.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                        <td style={{ padding: "0.4rem 0.5rem" }}>{p.receivedOn}</td>
+                        <td style={{ padding: "0.4rem 0.5rem" }}>{formatCompactInr(p.flatCostReceived)}</td>
+                        <td style={{ padding: "0.4rem 0.5rem" }}>{formatCompactInr(p.gstReceived)}</td>
+                        <td style={{ padding: "0.4rem 0.5rem", color: "#475569" }}>{p.source ?? "—"}</td>
+                        <td style={{ padding: "0.4rem 0.5rem", color: "#475569" }}>{p.remark ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </Section>
+
+          {detail.milestones.length > 0 && (
+            <Section title="Payment milestones">
+              <div style={{ gridColumn: "1 / -1" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.82rem" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+                      {["Milestone", "Amount due", "Due date", "Status"].map((h) => (
+                        <th key={h} style={{ textAlign: "left", padding: "0.4rem 0.5rem", color: "#64748b", fontWeight: 600, fontSize: "0.72rem", textTransform: "uppercase" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {detail.milestones.map((m) => (
+                      <tr key={m.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                        <td style={{ padding: "0.4rem 0.5rem" }}>{m.milestoneName}</td>
+                        <td style={{ padding: "0.4rem 0.5rem" }}>{formatCompactInr(m.amountDue)}</td>
+                        <td style={{ padding: "0.4rem 0.5rem" }}>{m.dueDate ?? "—"}</td>
+                        <td style={{ padding: "0.4rem 0.5rem" }}>{m.status}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Section>
+          )}
+        </>
       )}
     </div>
   );
@@ -548,6 +618,69 @@ function SummaryTile({ label, value, good }: { label: string; value: string; goo
       >
         {value}
       </div>
+    </div>
+  );
+}
+
+const MILESTONE_STATUS_COLOR: Record<string, string> = {
+  paid: "#15803d",
+  partial: "#b45309",
+  due: "#dc2626",
+  "not due": "#94a3b8",
+};
+
+// Overview tab's "dashboard elements" — a stacked completion bar plus the
+// counts it's built from. Tallying already-final status strings the API
+// already computed (GET /customers/:id) into 4 buckets is presentation,
+// not a new business figure — the same distinction CustomersScreen's
+// stage-color grouping already relies on. No new API call: this is
+// exactly the `milestones` array CustomerDetailScreen already has.
+function MilestoneProgress({ milestones }: { milestones: Milestone[] }) {
+  if (milestones.length === 0) return null;
+  const counts = { paid: 0, partial: 0, due: 0, "not due": 0 } as Record<string, number>;
+  for (const m of milestones) counts[m.status] = (counts[m.status] ?? 0) + 1;
+  const total = milestones.length;
+
+  return (
+    <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, padding: "1.1rem 1.25rem", marginBottom: "1rem" }}>
+      <div style={{ fontWeight: 700, fontSize: "0.85rem", color: "#0f172a", marginBottom: "0.75rem" }}>
+        Milestone progress ({counts.paid} of {total} paid)
+      </div>
+      <div style={{ display: "flex", height: 8, borderRadius: 999, overflow: "hidden", background: "#f1f5f9", marginBottom: "0.75rem" }}>
+        {(["paid", "partial", "due", "not due"] as const).map((status) =>
+          counts[status] > 0 ? (
+            <div key={status} style={{ width: `${(counts[status] / total) * 100}%`, background: MILESTONE_STATUS_COLOR[status] }} />
+          ) : null
+        )}
+      </div>
+      <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+        {(["paid", "partial", "due", "not due"] as const).map((status) => (
+          <div key={status} style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.78rem", color: "#64748b" }}>
+            <span style={{ width: 8, height: 8, borderRadius: 999, background: MILESTONE_STATUS_COLOR[status], flexShrink: 0 }} />
+            {counts[status]} {status}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Overview tab's other "dashboard element" — the last 3 payments, newest
+// first (GET /customers/:id already orders `payments` that way). A
+// glance at recent activity without needing the full ledger the Related
+// records tab shows.
+function RecentPayments({ payments }: { payments: Payment[] }) {
+  if (payments.length === 0) return null;
+  const recent = payments.slice(0, 3);
+  return (
+    <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, padding: "1.1rem 1.25rem" }}>
+      <div style={{ fontWeight: 700, fontSize: "0.85rem", color: "#0f172a", marginBottom: "0.75rem" }}>Recent payments</div>
+      {recent.map((p) => (
+        <div key={p.id} style={{ display: "flex", justifyContent: "space-between", padding: "0.4rem 0", borderBottom: "1px solid #f1f5f9", fontSize: "0.85rem" }}>
+          <span style={{ color: "#64748b" }}>{p.receivedOn} {p.source ? `· ${p.source}` : ""}</span>
+          <span style={{ color: "#0f172a", fontWeight: 600 }}>{formatCompactInr(p.flatCostReceived + p.gstReceived)}</span>
+        </div>
+      ))}
     </div>
   );
 }
