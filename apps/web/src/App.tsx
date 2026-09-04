@@ -6,6 +6,7 @@ import CustomerDetailScreen from "./CustomerDetailScreen";
 import NewCustomerScreen from "./NewCustomerScreen";
 import OverviewScreen from "./OverviewScreen";
 import type { Customer, DashboardKpis, Identity, PipelineData } from "./types";
+import { PS_COLORS } from "./theme";
 
 // This app only ever displays what the API sends back. It never decides who
 // can see what, and never computes a number itself — see
@@ -101,7 +102,7 @@ function Shell() {
     // fontFamily inherits from body (apps/web/src/index.css) — IBM Plex
     // Sans, Perfect Solutions' real brand font, not the system-ui default
     // this used to hardcode here.
-    <div style={{ display: "flex", minHeight: "100vh", background: "#f8fafc" }}>
+    <div style={{ display: "flex", minHeight: "100vh", background: PS_COLORS.offWhite }}>
       <Sidebar
         active={activeScreen}
         onNavigate={(screen) => {

@@ -20,6 +20,14 @@
 
 :root {
   --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  --ps-primary-blue: #1F5FBF;
+  --ps-near-black-navy: #1B2B4B;
+  --ps-pale-blue: #EEF3FA;
+  --ps-off-white: #F7F9FC;
+  --ps-hairline-tint: #DCE6F4;
+  --ps-rule-border: #C7D3E4;
+  --ps-grey: #8A8A8A;
+  --ps-reversed-text: #E6EDF7;
 }
 
 body {
@@ -32,6 +40,16 @@ body {
 button[data-rac] {
   font: inherit;
 }
+
+/* Inline component styles use these selectors until the shared design-token
+   migration is complete; this keeps the live screens on one brand palette. */
+[style*="#0f172a"] { color: var(--ps-near-black-navy) !important; }
+[style*="#1e293b"] { background-color: var(--ps-near-black-navy) !important; border-color: var(--ps-near-black-navy) !important; }
+[style*="#2563eb"] { color: var(--ps-primary-blue) !important; border-color: var(--ps-primary-blue) !important; }
+[style*="#e2e8f0"] { border-color: var(--ps-rule-border) !important; }
+[style*="#f8fafc"] { background-color: var(--ps-off-white) !important; }
+[style*="#f1f5f9"] { background-color: var(--ps-pale-blue) !important; border-color: var(--ps-hairline-tint) !important; }
+[style*="#64748b"], [style*="#94a3b8"], [style*="#475569"], [style*="#334155"] { color: var(--ps-grey) !important; }
 
 .advanced-filter-modal {
   max-height: calc(100vh - 2rem);

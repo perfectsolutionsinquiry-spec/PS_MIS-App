@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "react-aria-components";
 import { AriaSelect, AriaTextField } from "./AriaControls";
+import { PS_COLORS } from "./theme";
 import { useAuth } from "@clerk/clerk-react";
 import type { Builder, Identity } from "./types";
 import { STAGE_OPTIONS, Section, backLinkStyle } from "./CustomerDetailScreen";
@@ -145,8 +146,8 @@ const inputStyle = {
   fontSize: "0.85rem",
   padding: "0.4rem 0.55rem",
   borderRadius: 6,
-  border: "1px solid #e2e8f0",
-  background: "white",
-  color: "#0f172a",
+  border: `1px solid ${PS_COLORS.ruleBorder}`,
+  background: PS_COLORS.offWhite,
+  color: PS_COLORS.nearBlackNavy,
   fontFamily: "inherit",
 };

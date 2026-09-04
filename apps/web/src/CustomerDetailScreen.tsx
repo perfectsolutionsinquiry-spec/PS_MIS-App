@@ -7,6 +7,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import type { Bank, CustomerDetailResponse, Milestone, Payment } from "./types";
 import { formatCompactInr } from "./format";
+import { PS_COLORS } from "./theme";
 
 const API_URL = import.meta.env.VITE_API_URL as string;
 
@@ -631,13 +632,13 @@ function RecentPayments({ payments }: { payments: Payment[] }) {
   );
 }
 
-const fieldLabelStyle: CSSProperties = { fontSize: "0.72rem", color: "#64748b", marginBottom: "0.25rem" };
+const fieldLabelStyle: CSSProperties = { fontSize: "0.72rem", color: PS_COLORS.grey, marginBottom: "0.25rem" };
 
 export const backLinkStyle: CSSProperties = {
   background: "none",
   border: "none",
   padding: 0,
-  color: "#2563eb",
+  color: PS_COLORS.primaryBlue,
   fontSize: "0.85rem",
   cursor: "pointer",
   font: "inherit",
@@ -646,9 +647,9 @@ export const backLinkStyle: CSSProperties = {
 const primaryBtnStyle: CSSProperties = {
   fontSize: "0.82rem",
   fontWeight: 600,
-  color: "white",
-  background: "#2563eb",
-  border: "1px solid #2563eb",
+  color: PS_COLORS.reversedText,
+  background: PS_COLORS.primaryBlue,
+  border: `1px solid ${PS_COLORS.primaryBlue}`,
   borderRadius: 6,
   padding: "0.45rem 0.9rem",
   cursor: "pointer",
@@ -657,9 +658,9 @@ const primaryBtnStyle: CSSProperties = {
 const secondaryBtnStyle: CSSProperties = {
   fontSize: "0.82rem",
   fontWeight: 600,
-  color: "#475569",
-  background: "white",
-  border: "1px solid #e2e8f0",
+  color: PS_COLORS.nearBlackNavy,
+  background: PS_COLORS.offWhite,
+  border: `1px solid ${PS_COLORS.ruleBorder}`,
   borderRadius: 6,
   padding: "0.45rem 0.9rem",
   cursor: "pointer",

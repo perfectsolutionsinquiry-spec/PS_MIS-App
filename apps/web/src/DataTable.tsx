@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { Button } from "react-aria-components";
 import { Dialog, Modal, ModalOverlay } from "react-aria-components";
 import { AriaCheckbox, AriaSelect, AriaTextField } from "./AriaControls";
+import { PS_COLORS } from "./theme";
 import { Cell as AriaCell, Column as AriaColumn, Row as AriaRow, Table as AriaTable, TableBody as AriaTableBody, TableHeader as AriaTableHeader } from "react-aria-components/Table";
 import type { CSSProperties, ReactNode } from "react";
 
@@ -510,7 +511,7 @@ function AdvancedFilterModal<T>({
       conditions: [{ id: `condition-${Date.now()}`, field: columns[0]?.key ?? "", operator: "contains", value: "" }],
     },
   ]);
-  const selectStyle: CSSProperties = { padding: "0.45rem 0.5rem", border: "1px solid #cbd5e1", borderRadius: 6, background: "white", color: "#0f172a", fontSize: "0.82rem" };
+  const selectStyle: CSSProperties = { padding: "0.45rem 0.5rem", border: `1px solid ${PS_COLORS.ruleBorder}`, borderRadius: 6, background: PS_COLORS.offWhite, color: PS_COLORS.nearBlackNavy, fontSize: "0.82rem" };
   return (
       <div className="advanced-filter-modal advanced-filter-panel" style={{ ...modalStyle, width: "100%", boxSizing: "border-box", marginBottom: "1.25rem" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
@@ -837,24 +838,24 @@ export const modalStyle: CSSProperties = {
   boxShadow: "0 12px 40px rgba(15,23,42,0.25)",
 };
 
-export const fieldLabelStyle: CSSProperties = { fontSize: "0.72rem", color: "#64748b", marginBottom: "0.25rem" };
-const labelStyle: CSSProperties = { display: "block", color: "#475569", fontSize: "0.78rem", fontWeight: 600 };
-const closeButtonStyle: CSSProperties = { border: "none", background: "transparent", color: "#64748b", fontSize: "1.5rem", cursor: "pointer", lineHeight: 1 };
-const smallButtonStyle: CSSProperties = { border: "1px solid #e2e8f0", borderRadius: 6, background: "white", color: "#64748b", width: 28, height: 28, cursor: "pointer", fontSize: "1rem" };
-const logicButtonStyle: CSSProperties = { border: "1px solid #64748b", borderRadius: 5, background: "white", color: "#334155", cursor: "pointer", fontSize: "0.78rem", fontWeight: 600, padding: "0.36rem 0.6rem", textTransform: "lowercase" };
+export const fieldLabelStyle: CSSProperties = { fontSize: "0.72rem", color: PS_COLORS.grey, marginBottom: "0.25rem" };
+const labelStyle: CSSProperties = { display: "block", color: PS_COLORS.nearBlackNavy, fontSize: "0.78rem", fontWeight: 600 };
+const closeButtonStyle: CSSProperties = { border: "none", background: "transparent", color: PS_COLORS.grey, fontSize: "1.5rem", cursor: "pointer", lineHeight: 1 };
+const smallButtonStyle: CSSProperties = { border: `1px solid ${PS_COLORS.ruleBorder}`, borderRadius: 6, background: PS_COLORS.offWhite, color: PS_COLORS.grey, width: 28, height: 28, cursor: "pointer", fontSize: "1rem" };
+const logicButtonStyle: CSSProperties = { border: `1px solid ${PS_COLORS.ruleBorder}`, borderRadius: 5, background: PS_COLORS.offWhite, color: PS_COLORS.nearBlackNavy, cursor: "pointer", fontSize: "0.78rem", fontWeight: 600, padding: "0.36rem 0.6rem", textTransform: "lowercase" };
 const deleteButtonStyle: CSSProperties = { border: "none", background: "transparent", color: "#cbd5e1", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 32, padding: 0 };
-const outlineButtonStyle: CSSProperties = { border: "1px solid #64748b", borderRadius: 5, background: "white", color: "#334155", cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, padding: "0.4rem 0.65rem" };
-const sortDirectionButtonStyle: CSSProperties = { border: "1px solid #64748b", borderRadius: 5, background: "#f8fafc", color: "#334155", cursor: "pointer", fontSize: "1rem", fontWeight: 700, width: 38, height: 32 };
-const sortRemoveButtonStyle: CSSProperties = { border: "none", background: "transparent", color: "#64748b", cursor: "pointer", fontSize: "1rem", lineHeight: 1, padding: "0.2rem" };
-const addSortButtonStyle: CSSProperties = { display: "inline-block", width: "auto", border: "1px solid #2563eb", borderRadius: 5, background: "white", color: "#2563eb", cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, padding: "0.35rem 0.65rem", marginTop: "0.45rem" };
-const textButtonStyle: CSSProperties = { border: "none", background: "transparent", color: "#2563eb", padding: "0.2rem 0", cursor: "pointer", fontSize: "0.78rem", fontWeight: 600 };
+const outlineButtonStyle: CSSProperties = { border: `1px solid ${PS_COLORS.ruleBorder}`, borderRadius: 5, background: PS_COLORS.offWhite, color: PS_COLORS.nearBlackNavy, cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, padding: "0.4rem 0.65rem" };
+const sortDirectionButtonStyle: CSSProperties = { border: `1px solid ${PS_COLORS.ruleBorder}`, borderRadius: 5, background: PS_COLORS.offWhite, color: PS_COLORS.nearBlackNavy, cursor: "pointer", fontSize: "1rem", fontWeight: 700, width: 38, height: 32 };
+const sortRemoveButtonStyle: CSSProperties = { border: "none", background: "transparent", color: PS_COLORS.grey, cursor: "pointer", fontSize: "1rem", lineHeight: 1, padding: "0.2rem" };
+const addSortButtonStyle: CSSProperties = { display: "inline-block", width: "auto", border: `1px solid ${PS_COLORS.primaryBlue}`, borderRadius: 5, background: PS_COLORS.offWhite, color: PS_COLORS.primaryBlue, cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, padding: "0.35rem 0.65rem", marginTop: "0.45rem" };
+const textButtonStyle: CSSProperties = { border: "none", background: "transparent", color: PS_COLORS.primaryBlue, padding: "0.2rem 0", cursor: "pointer", fontSize: "0.78rem", fontWeight: 600 };
 
 export const primaryBtnStyle: CSSProperties = {
   fontSize: "0.82rem",
   fontWeight: 600,
-  color: "white",
-  background: "#2563eb",
-  border: "1px solid #2563eb",
+  color: PS_COLORS.reversedText,
+  background: PS_COLORS.primaryBlue,
+  border: `1px solid ${PS_COLORS.primaryBlue}`,
   borderRadius: 6,
   padding: "0.45rem 0.9rem",
   cursor: "pointer",
@@ -863,9 +864,9 @@ export const primaryBtnStyle: CSSProperties = {
 export const secondaryBtnStyle: CSSProperties = {
   fontSize: "0.82rem",
   fontWeight: 600,
-  color: "#475569",
-  background: "white",
-  border: "1px solid #e2e8f0",
+  color: PS_COLORS.nearBlackNavy,
+  background: PS_COLORS.offWhite,
+  border: `1px solid ${PS_COLORS.ruleBorder}`,
   borderRadius: 6,
   padding: "0.45rem 0.9rem",
   cursor: "pointer",
@@ -875,13 +876,13 @@ const iconButtonStyle: CSSProperties = {
   width: 36,
   height: 36,
   borderRadius: 8,
-  border: "1px solid #e2e8f0",
-  background: "white",
-  color: "#475569",
+  border: `1px solid ${PS_COLORS.ruleBorder}`,
+  background: PS_COLORS.offWhite,
+  color: PS_COLORS.nearBlackNavy,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
   cursor: "pointer",
 };
 
-const slushIconButtonStyle: CSSProperties = { border: "none", background: "transparent", color: "#64748b", cursor: "pointer", fontSize: "0.85rem", lineHeight: 1, padding: "0.1rem" };
+const slushIconButtonStyle: CSSProperties = { border: "none", background: "transparent", color: PS_COLORS.grey, cursor: "pointer", fontSize: "0.85rem", lineHeight: 1, padding: "0.1rem" };

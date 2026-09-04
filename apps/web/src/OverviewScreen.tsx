@@ -4,6 +4,7 @@ import { useAuth } from "@clerk/clerk-react";
 import { Button } from "react-aria-components";
 import { AriaSelect } from "./AriaControls";
 import { AriaDataTable } from "./AriaControls";
+import { PS_COLORS } from "./theme";
 import type { DashboardKpis, DailyCollectionRow, PipelineData } from "./types";
 import { formatCompactInr, formatPct, formatShortDate } from "./format";
 import PageHeader from "./PageHeader";
@@ -20,16 +21,16 @@ const API_URL = import.meta.env.VITE_API_URL as string;
 // check instead, confirmed by actually running the validator, not
 // assumed), plus a neutral gray for the server-computed "Other" bucket —
 // see DonutChart.tsx for the real numbers behind this choice.
-const CATEGORICAL = ["#2a78d6", "#eb6834", "#1baf7a", "#4a3aa7"];
-const OTHER_COLOR = "#94a3b8";
+const CATEGORICAL = [PS_COLORS.primaryBlue, PS_COLORS.nearBlackNavy, "#4b79b8", PS_COLORS.grey];
+const OTHER_COLOR = PS_COLORS.grey;
 
 const controlStyle: CSSProperties = {
   fontSize: "0.78rem",
   padding: "0.35rem 0.6rem",
   borderRadius: 6,
-  border: "1px solid #e2e8f0",
-  background: "white",
-  color: "#0f172a",
+  border: `1px solid ${PS_COLORS.ruleBorder}`,
+  background: PS_COLORS.offWhite,
+  color: PS_COLORS.nearBlackNavy,
 };
 
 // Shared card chrome for every "Collection & loan pipeline" tile. `table`

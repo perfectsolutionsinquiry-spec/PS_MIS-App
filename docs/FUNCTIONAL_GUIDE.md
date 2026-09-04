@@ -152,6 +152,19 @@ in the sidebar; the full logo-with-wordmark appears on the sign-in
 screen. All on-screen text uses IBM Plex Sans, the same typeface family
 the printed brochure uses for its titles and labels.
 
+### Brand colour palette
+
+| Role | Hex | Used for |
+|---|---|---|
+| Primary blue | `#1F5FBF` | Section titles, key lines, block fills, stat figures |
+| Near-black navy | `#1B2B4B` | Body copy and the cover band |
+| Pale blue | `#EEF3FA` | Box fills |
+| Off-white | `#F7F9FC` | Image placeholder fill and light surfaces |
+| Hairline tint | `#DCE6F4` | Rules inside fact tables |
+| Rule / border | `#C7D3E4` | Section underlines and box outlines |
+| Grey | `#8A8A8A` | Captions, disclaimer, and secondary text |
+| Reversed text | `#E6EDF7` | Type sitting on blue blocks |
+
 ## 7. Things that are deliberate, not bugs
 
 - **A payment can't be edited or deleted, only added.** This matches how

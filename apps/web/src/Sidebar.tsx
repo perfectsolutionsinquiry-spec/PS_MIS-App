@@ -2,6 +2,7 @@ import { useState } from "react";
 import { UserButton } from "@clerk/clerk-react";
 import { Button } from "react-aria-components";
 import type { Identity } from "./types";
+import { PS_COLORS } from "./theme";
 
 // Small inline icons — no icon library dependency for a sidebar this size,
 // and no emoji per house style. Each is a plain stroke icon; several paths
@@ -116,8 +117,8 @@ export default function Sidebar({
       style={{
         width: collapsed ? 68 : 232,
         flexShrink: 0,
-        background: "#0f172a",
-        color: "#cbd5e1",
+        background: PS_COLORS.nearBlackNavy,
+        color: PS_COLORS.reversedText,
         display: "flex",
         flexDirection: "column",
         height: "100vh",

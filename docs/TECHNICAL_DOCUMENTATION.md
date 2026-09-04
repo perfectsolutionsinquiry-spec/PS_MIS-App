@@ -48,6 +48,29 @@ reasoning and history: `CLAUDE.md`.
 
 ---
 
+## 1.1 Branding and visual tokens
+
+The shared frontend palette is defined in `apps/web/src/theme.ts` and mirrored
+as CSS custom properties in `apps/web/src/index.css`. Use these tokens for new
+components instead of introducing one-off brand colours:
+
+| Role | Hex | Intended use |
+|---|---|---|
+| Primary blue | `#1F5FBF` | Section titles, key lines, block fills, stat figures |
+| Near-black navy | `#1B2B4B` | Body copy and cover bands |
+| Pale blue | `#EEF3FA` | Box fills |
+| Off-white | `#F7F9FC` | Image placeholders and light surfaces |
+| Hairline tint | `#DCE6F4` | Fact-table rules |
+| Rule / border | `#C7D3E4` | Section underlines and box outlines |
+| Grey | `#8A8A8A` | Captions and secondary text |
+| Reversed text | `#E6EDF7` | Type on blue blocks |
+
+Chart series may retain additional contrast colours where multiple data
+categories must remain distinguishable; those are data-visualisation colours,
+not application chrome.
+
+---
+
 ## 2. Database schema map
 
 13 tables, `db/migrations/0001_init.sql` (`0002`/`0003` alter auth columns
@@ -240,6 +263,7 @@ it talks to.
 |---|---|---|
 | `main.tsx` | Mounts the app, wraps it in `ClerkProvider` (with the brand-font `appearance` prop), imports `index.css`. | — |
 | `index.css` | The one global CSS file in an otherwise fully-inline-styled app — loads IBM Plex Sans, sets it as the `body` default, and provides responsive breakpoints for the inline advanced filter panel and field personalizer so controls reflow on narrow screens. | — |
+| `theme.ts` | Single source of truth for the Perfect Solutions brand colour tokens used by new and shared UI styles. | — |
 | `AriaControls.tsx` | Shared React Aria Components wrappers for text fields, textareas, selects, checkboxes, and data tables. These preserve the application's existing visual styles while standardizing accessible interaction behavior. | — |
 | `App.tsx` | Top-level shell: signed-out vs signed-in, fetches `/me` + `/customers` + `/dashboard/overview` on load, owns `activeScreen` and the Customers list/record view switch, renders `Sidebar` + the active screen. `loadCustomers()` returns the fresh array (not just setting state) so a caller mid-function — e.g. after creating a customer — can read the new row immediately rather than the stale pre-refresh `customers` closure. | `/me`, `/customers`, `/dashboard/overview` |
 | `Sidebar.tsx` | Dark nav rail — Action Items / Dashboard (Overview, +3 disabled "soon") / Records (Customers, +2 disabled) / Settings. Brand mark + collapse toggle + Clerk's `<UserButton/>`. | — |
