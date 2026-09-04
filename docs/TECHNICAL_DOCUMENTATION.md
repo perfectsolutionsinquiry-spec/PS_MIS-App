@@ -93,6 +93,19 @@ erDiagram
 | `co_applicants` | A customer's co-applicant(s) on the loan/agreement. | Yes |
 | `customer_milestones` | One row per customer per milestone — generated from `payment_milestones`, tracks `amount_due` / `due_date` / `status`. | Yes |
 | `recovery_transactions` | The actual payment ledger — every rupee received, one row per payment. Source of truth for "amount received." Insert-only (§4, `POST /customers/:id/payments`). | Yes |
+| `app_settings` | *(`0004_settings_and_soft_delete.sql`)* Generic key/value platform config — starting with `customer_highlight_fields`, which fields show at the top of a customer record. | No — app-wide UI config, not tenant data |
+
+`customers` also gained `is_active boolean not null default true` in the
+same migration — the soft-delete field: Delete never removes a row, it
+sets this false. `GET /customers` filters to `is_active = true`;
+`GET /customers/:id` does not (an id you already have still resolves) —
+there's no "view archived / restore" screen yet, a disclosed gap.
+
+**`0004` is a manual step, same as `0001`-`0003`** — written and committed
+here, but only takes effect once it's actually run against Neon's SQL
+Editor. Until then, `DELETE /customers/:id` and the highlight-fields
+settings routes will 500 (the column/table they need doesn't exist yet)
+— those routes are not deployed until this migration is confirmed run.
 
 ### 2.3 Row-level security, in one paragraph
 
@@ -227,7 +240,8 @@ it talks to.
 |---|---|---|
 | `main.tsx` | Mounts the app, wraps it in `ClerkProvider` (with the brand-font `appearance` prop), imports `index.css`. | — |
 | `index.css` | The one global CSS file in an otherwise fully-inline-styled app — loads IBM Plex Sans and sets it as the `body` default. | — |
-| `App.tsx` | Top-level shell: signed-out vs signed-in, fetches `/me` + `/customers` + `/dashboard/overview` on load, owns `activeScreen`/`selectedCustomerId` routing state, renders `Sidebar` + the active screen. `loadCustomers()` here is reusable (called again after creating a customer). | `/me`, `/customers`, `/dashboard/overview` |
+| `App.tsx` | Top-level shell: signed-out vs signed-in, fetches `/me` + `/customers` + `/dashboard/overview` on load, owns `activeScreen` routing plus the Customers screen's tab state (`activeView`/`customerTabs`/`newCustomerTabOpen` — see `TabStrip.tsx`), renders `Sidebar` + the active screen. `loadCustomers()` returns the fresh array (not just setting state) so a caller mid-function — e.g. after creating a customer — can read the new row immediately rather than the stale pre-refresh `customers` closure. | `/me`, `/customers`, `/dashboard/overview` |
+| `TabStrip.tsx` | The ServiceNow-style tab row above the Customers screen — "Customers" (the list, never closes) + one closable tab per open customer record + at most one "New customer" tab. Purely presentational; `App.tsx` owns which tabs exist. Switching tabs re-mounts the target screen (no keep-alive across tabs yet — an in-progress edit on a tab you switch away from is lost, same as closing and reopening it). | — |
 | `Sidebar.tsx` | Dark nav rail — Action Items / Dashboard (Overview, +3 disabled "soon") / Records (Customers, +2 disabled) / Settings. Brand mark + collapse toggle + Clerk's `<UserButton/>`. | — |
 | `PageHeader.tsx` | Shared all-caps title + 2 disabled icon buttons (email/export — "soon"), used by every screen. | — |
 | `OverviewScreen.tsx` | 6 KPI tiles + 4 chart cards (`DonutChart`, `BarChart` ×2, `LineChart`). `KpiTile` is the reusable tile; `ChartCard` (in this file) is the reusable "chart + View as table" wrapper. | `/dashboard/daily-collection` (range changes only — the rest arrives via `App.tsx`'s initial fetch) |

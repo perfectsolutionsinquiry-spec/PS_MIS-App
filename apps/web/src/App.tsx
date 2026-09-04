@@ -5,6 +5,8 @@ import CustomersScreen from "./CustomersScreen";
 import CustomerDetailScreen from "./CustomerDetailScreen";
 import NewCustomerScreen from "./NewCustomerScreen";
 import OverviewScreen from "./OverviewScreen";
+import TabStrip from "./TabStrip";
+import type { Tab } from "./TabStrip";
 import type { Customer, DashboardKpis, Identity, PipelineData } from "./types";
 
 // This app only ever displays what the API sends back. It never decides who
@@ -25,13 +27,42 @@ function Shell() {
   const [pipeline, setPipeline] = useState<PipelineData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeScreen, setActiveScreen] = useState("overview");
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
-  const [creatingCustomer, setCreatingCustomer] = useState(false);
 
-  // Pulled out of the initial-load effect below so "New customer" can
-  // re-run just this fetch afterwards, without re-fetching /me or
-  // /dashboard/overview along with it.
-  async function loadCustomers() {
+  // The ServiceNow-style tab strip on the Customers screen — "Customers"
+  // (the list) is always present and never closes; each customer opened
+  // gets its own closable tab (label taken straight from the already-
+  // loaded `customers` array, so it shows up instantly without waiting on
+  // a detail fetch); "New customer" is a single transient tab, opened at
+  // most once at a time. `activeView` is which one is currently showing;
+  // `customerTabs` is which customer tabs exist at all (closing one drops
+  // it from here, switching to another just changes activeView).
+  type ActiveView = { kind: "list" } | { kind: "customer"; id: string } | { kind: "new-customer" };
+  const [activeView, setActiveView] = useState<ActiveView>({ kind: "list" });
+  const [customerTabs, setCustomerTabs] = useState<{ id: string; label: string }[]>([]);
+  const [newCustomerTabOpen, setNewCustomerTabOpen] = useState(false);
+
+  function openCustomerTab(id: string, label: string) {
+    setCustomerTabs((tabs) => (tabs.some((t) => t.id === id) ? tabs : [...tabs, { id, label }]));
+    setActiveView({ kind: "customer", id });
+  }
+  function closeCustomerTab(id: string) {
+    setCustomerTabs((tabs) => tabs.filter((t) => t.id !== id));
+    setActiveView((v) => (v.kind === "customer" && v.id === id ? { kind: "list" } : v));
+  }
+  function closeNewCustomerTab() {
+    setNewCustomerTabOpen(false);
+    setActiveView((v) => (v.kind === "new-customer" ? { kind: "list" } : v));
+  }
+
+  // Pulled out of the initial-load effect below so "New customer" (and
+  // Delete, once that's wired up) can re-run just this fetch afterwards,
+  // without re-fetching /me or /dashboard/overview along with it. Returns
+  // the fresh array too — a caller that needs the just-created/just-
+  // deleted row's own data (e.g. a new customer's name, for its tab
+  // label) can use that directly instead of reading the `customers`
+  // state variable, which is still the pre-refresh value inside the same
+  // function body React state updates don't apply synchronously within.
+  async function loadCustomers(): Promise<Customer[]> {
     const token = await getToken();
     const res = await fetch(`${API_URL}/customers`, { headers: { Authorization: `Bearer ${token}` } });
     const body = await res.json().catch(() => ({}));
@@ -41,9 +72,11 @@ function Shell() {
       // query against the seeded schema. Fixed by checking .ok here
       // instead of assuming success.
       setError(body.error ?? body.message ?? `Server said: ${res.status}`);
-      return;
+      return [];
     }
-    setCustomers(body.customers ?? []);
+    const fresh: Customer[] = body.customers ?? [];
+    setCustomers(fresh);
+    return fresh;
   }
 
   useEffect(() => {
@@ -87,11 +120,14 @@ function Shell() {
       <Sidebar
         active={activeScreen}
         onNavigate={(screen) => {
-          // Switching screens from the sidebar always leaves customer-detail
-          // or new-customer view — otherwise clicking "Customers" again
-          // while one of those is open would just re-render it underneath.
-          setSelectedCustomerId(null);
-          setCreatingCustomer(false);
+          // Switching screens from the sidebar always lands back on the
+          // Customers list, not whichever tab happened to be open —
+          // otherwise clicking "Customers" again would just re-show a
+          // record or the new-customer form underneath. The open tabs
+          // themselves stay open (customerTabs/newCustomerTabOpen are
+          // untouched) so coming back to Customers restores them, same as
+          // real browser tabs surviving a switch to a different app.
+          setActiveView({ kind: "list" });
           setActiveScreen(screen);
         }}
         identity={identity}
@@ -122,28 +158,66 @@ function Shell() {
           <OverviewScreen kpis={kpis} pipeline={pipeline} />
         )}
 
-        {!error && customers !== null && kpis !== null && activeScreen === "customers" && selectedCustomerId === null && !creatingCustomer && (
-          <CustomersScreen customers={customers} onSelect={setSelectedCustomerId} onNew={() => setCreatingCustomer(true)} />
-        )}
+        {!error && customers !== null && kpis !== null && activeScreen === "customers" && (
+          <>
+            <TabStrip
+              tabs={[
+                { key: "list", label: "Customers" },
+                ...customerTabs.map((t): Tab => ({ key: t.id, label: t.label, closable: true })),
+                ...(newCustomerTabOpen ? [{ key: "new-customer", label: "New customer", closable: true } as Tab] : []),
+              ]}
+              active={activeView.kind === "list" ? "list" : activeView.kind === "new-customer" ? "new-customer" : activeView.id}
+              onSelect={(key) => {
+                if (key === "list") setActiveView({ kind: "list" });
+                else if (key === "new-customer") setActiveView({ kind: "new-customer" });
+                else setActiveView({ kind: "customer", id: key });
+              }}
+              onClose={(key) => {
+                if (key === "new-customer") closeNewCustomerTab();
+                else closeCustomerTab(key);
+              }}
+            />
 
-        {!error && activeScreen === "customers" && creatingCustomer && (
-          <NewCustomerScreen
-            identity={identity}
-            onBack={() => setCreatingCustomer(false)}
-            onCreated={async (id) => {
-              // Refresh the list (the new row belongs in it from now on)
-              // and jump straight into the record that was just created —
-              // there's nothing useful to look at on the list screen
-              // immediately after creating one entry.
-              setCreatingCustomer(false);
-              await loadCustomers();
-              setSelectedCustomerId(id);
-            }}
-          />
-        )}
+            {activeView.kind === "list" && (
+              <CustomersScreen
+                customers={customers}
+                onSelect={(id) => {
+                  const found = customers.find((c) => c.id === id);
+                  openCustomerTab(id, found?.full_name ?? "Customer");
+                }}
+                onNew={() => {
+                  setNewCustomerTabOpen(true);
+                  setActiveView({ kind: "new-customer" });
+                }}
+              />
+            )}
 
-        {!error && activeScreen === "customers" && !creatingCustomer && selectedCustomerId !== null && (
-          <CustomerDetailScreen customerId={selectedCustomerId} onBack={() => setSelectedCustomerId(null)} />
+            {activeView.kind === "new-customer" && (
+              <NewCustomerScreen
+                identity={identity}
+                onBack={closeNewCustomerTab}
+                onCreated={async (id) => {
+                  // Refresh the list (the new row belongs in it from now
+                  // on), close the transient "New customer" tab, and open
+                  // a real tab for the record that was just created —
+                  // there's nothing useful to look at on the list
+                  // immediately after creating one entry. Uses
+                  // loadCustomers' own return value for the new row's
+                  // name, not the `customers` state variable — that's
+                  // still last render's value at this point in the
+                  // function, not what was just fetched.
+                  closeNewCustomerTab();
+                  const fresh = await loadCustomers();
+                  const created = fresh.find((c) => c.id === id);
+                  openCustomerTab(id, created?.full_name ?? "Customer");
+                }}
+              />
+            )}
+
+            {activeView.kind === "customer" && (
+              <CustomerDetailScreen customerId={activeView.id} onBack={() => closeCustomerTab(activeView.id)} />
+            )}
+          </>
         )}
       </main>
     </div>

@@ -296,7 +296,9 @@ const CATEGORIES = [
           <tr><td><code>co_applicants</code></td><td>A customer's co-applicant(s).</td><td>Yes</td></tr>
           <tr><td><code>customer_milestones</code></td><td>One row per customer per milestone — due/paid status.</td><td>Yes</td></tr>
           <tr><td><code>recovery_transactions</code></td><td>The payment ledger. Insert-only.</td><td>Yes</td></tr>
+          <tr><td><code>app_settings</code></td><td><em>(0004)</em> Generic key/value platform config — starts with <code>customer_highlight_fields</code>.</td><td>No — app-wide config</td></tr>
         </table></div>
+        <div class="callout"><strong>0004 is a manual step</strong>, same as 0001-0003 — written and committed, but only takes effect once actually run against Neon. Also adds <code>customers.is_active</code> (the soft-delete field — Delete sets this false, never removes the row). Until the migration runs, <code>DELETE /customers/:id</code> and the highlight-fields settings routes aren't deployed.</div>
         <h3>Row-level security, in one paragraph</h3>
         <p>Every RLS table has one policy: <code>is_staff OR builder_id = current_builder_id</code>, <strong>forced</strong> (binds even to the table's owning DB role). The API sets <code>app.is_staff</code> / <code>app.current_builder_id</code> per request from the verified Clerk identity — never from the client. <code>builder_users</code> has RLS off on purpose: the query that discovers which builder a login belongs to must run before any tenant context exists.</p>
         <div class="callout"><strong>Deliberately not in the schema:</strong> spreadsheet formula/derived columns (Basic Value formula, Agreement Value formula, per-stage percentages). Those belong in a future <code>packages/calc-engine</code>, computed from the raw inputs — storing the same fact twice is the bug class this avoids.</div>
@@ -372,7 +374,8 @@ const CATEGORIES = [
         <div class="table-wrap"><table>
           <tr><th>File</th><th>Renders / does</th><th>Calls</th></tr>
           <tr><td><code>main.tsx</code></td><td>Mounts the app, wraps in <code>ClerkProvider</code> (brand-font appearance), imports <code>index.css</code>.</td><td>—</td></tr>
-          <tr><td><code>App.tsx</code></td><td>Top-level shell — signed-out vs signed-in, initial fetches, screen routing state. <code>loadCustomers()</code> is reusable.</td><td><code>/me</code>, <code>/customers</code>, <code>/dashboard/overview</code></td></tr>
+          <tr><td><code>App.tsx</code></td><td>Top-level shell — signed-out vs signed-in, initial fetches, screen routing plus the Customers tab state. <code>loadCustomers()</code> returns the fresh array, not just void.</td><td><code>/me</code>, <code>/customers</code>, <code>/dashboard/overview</code></td></tr>
+          <tr><td><code>TabStrip.tsx</code></td><td>The ServiceNow-style tab row — "Customers" (never closes) + one closable tab per open record + at most one "New customer" tab. No keep-alive across tabs — switching re-mounts the target screen.</td><td>—</td></tr>
           <tr><td><code>Sidebar.tsx</code></td><td>Dark nav rail, brand mark, collapse toggle, Clerk's <code>&lt;UserButton/&gt;</code>.</td><td>—</td></tr>
           <tr><td><code>PageHeader.tsx</code></td><td>Shared all-caps title + 2 disabled icon buttons.</td><td>—</td></tr>
           <tr><td><code>OverviewScreen.tsx</code></td><td>6 KPI tiles + 4 chart cards. <code>KpiTile</code>, <code>ChartCard</code> reusable pieces.</td><td><code>/dashboard/daily-collection</code></td></tr>
@@ -460,7 +463,7 @@ const CATEGORIES = [
           <li><strong>Choose which columns show, and their order</strong> — the gear icon opens a two-list picker (move columns between Hidden/Visible, and reorder the Visible list with the ↑/↓ buttons). <strong>Remembered on this browser/device only.</strong></li>
           <li><strong>New customer</strong> — a full page, not a popup: name, agreement no., phone, email, stage, plus a builder picker for staff. Required fields marked with a red *. Everything else gets filled in by opening the new customer and editing it.</li>
         </ul>
-        <p>Clicking any row opens that customer's full record.</p>
+        <p>Clicking any row opens that customer's full record <strong>in its own tab</strong> above the table — "Customers" never closes; each record opens next to it with an ✕ to close it. Open several at once and switch freely; "New customer" works the same way. Switching screens and back to Customers restores your open tabs.</p>
       `},
       { id: "customer-record", title: "A customer's record", html: `
         <p>Opens when you click a row in the Customers table. The name, stage, and Edit/Save/Cancel buttons stay the same across all 3 tabs below — Edit always jumps to Details, the only tab with anything editable.</p>

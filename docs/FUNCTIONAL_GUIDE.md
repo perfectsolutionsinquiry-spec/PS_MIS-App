@@ -85,7 +85,13 @@ A live, searchable, sortable table of every customer you have access to.
   the record gets filled in afterwards by opening the new customer and
   editing it, same as any existing customer.
 
-Clicking any row opens that customer's full record.
+Clicking any row opens that customer's full record **in its own tab**,
+above the table — a "Customers" tab is always there and never closes;
+each record you open gets its own tab next to it, with an ✕ to close it.
+Open more than one at once and switch between them freely; opening
+"New customer" works the same way, as one more tab. Switching away to
+another screen in the sidebar and back to Customers brings your open
+tabs back too — closing a tab is the only thing that actually loses it.
 
 ## 5. A customer's record
 
