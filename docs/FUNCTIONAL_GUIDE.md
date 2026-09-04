@@ -83,7 +83,7 @@ A live, searchable, sortable table of every customer you have access to.
   builder. Choose a field, an operation (contains, starts with, ends with,
   is, is not, is one of, is empty, or is not empty), and a value. Add
   an **and** or **or** condition directly beside any statement, remove a
-  statement with the attached ×, group the results by a field, and choose a
+  statement with the trash/delete icon, group the results by a field, and choose a
   sort field and direction. The sort section shows **None** when no sort is
   applied, and **Add Sort** adds another sort level. **Add condition set**
   creates another OR set. Nothing changes until you press **Run**; **Cancel**

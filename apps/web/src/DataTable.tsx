@@ -68,6 +68,7 @@ function useColumnVisibility(tableKey: string, columns: { key: string; defaultVi
       // everything rather than an empty table.
       return defaults;
     }
+
   });
 
   function setVisible(keys: string[]) {
@@ -460,6 +461,10 @@ function FilterIcon() {
   return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 5h16M7 12h10M10 19h4" /></svg>;
 }
 
+function TrashIcon() {
+  return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>;
+}
+
 function AdvancedFilterModal<T>({
   columns, initial, onRun, onCancel,
 }: {
@@ -524,13 +529,13 @@ function AdvancedFilterModal<T>({
                   {condition.operator === "isEmpty" || condition.operator === "isNotEmpty" ? (
                     <div style={{ ...selectStyle, color: "#94a3b8", paddingRight: "2rem" }}>No value required</div>
                   ) : (
-                    <input value={condition.value} onChange={(e) => updateCondition(group.id, condition.id, { value: e.target.value })} placeholder={condition.operator === "oneOf" ? "Value 1, Value 2" : "Value"} style={{ ...selectStyle, width: "100%", paddingRight: "2rem" }} />
+                    <input value={condition.value} onChange={(e) => updateCondition(group.id, condition.id, { value: e.target.value })} placeholder={condition.operator === "oneOf" ? "Value 1, Value 2" : "Value"} style={{ ...selectStyle, width: "100%" }} />
                   )}
-                  <button type="button" onClick={() => removeCondition(group.id, condition.id)} title="Remove condition" style={attachedRemoveButtonStyle}>×</button>
                 </div>
                 <div className="advanced-filter-logic" style={{ display: "flex", gap: "0.25rem", alignItems: "center" }}>
                   <button type="button" onClick={addOrCondition} style={logicButtonStyle}>or</button>
                   <button type="button" onClick={() => addCondition(group.id)} style={logicButtonStyle}>and</button>
+                  <button type="button" onClick={() => removeCondition(group.id, condition.id)} title="Delete condition" aria-label="Delete condition" style={deleteButtonStyle}><TrashIcon /></button>
                 </div>
               </div>
             ))}
@@ -863,8 +868,8 @@ export const fieldLabelStyle: CSSProperties = { fontSize: "0.72rem", color: "#64
 const labelStyle: CSSProperties = { display: "block", color: "#475569", fontSize: "0.78rem", fontWeight: 600 };
 const closeButtonStyle: CSSProperties = { border: "none", background: "transparent", color: "#64748b", fontSize: "1.5rem", cursor: "pointer", lineHeight: 1 };
 const smallButtonStyle: CSSProperties = { border: "1px solid #e2e8f0", borderRadius: 6, background: "white", color: "#64748b", width: 28, height: 28, cursor: "pointer", fontSize: "1rem" };
-const attachedRemoveButtonStyle: CSSProperties = { position: "absolute", right: 5, top: "50%", transform: "translateY(-50%)", border: "none", background: "transparent", color: "#64748b", cursor: "pointer", fontSize: "1rem", lineHeight: 1, padding: "0.1rem" };
 const logicButtonStyle: CSSProperties = { border: "1px solid #64748b", borderRadius: 5, background: "white", color: "#334155", cursor: "pointer", fontSize: "0.78rem", fontWeight: 600, padding: "0.36rem 0.6rem", textTransform: "lowercase" };
+const deleteButtonStyle: CSSProperties = { border: "none", background: "transparent", color: "#cbd5e1", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 32, padding: 0 };
 const outlineButtonStyle: CSSProperties = { border: "1px solid #64748b", borderRadius: 5, background: "white", color: "#334155", cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, padding: "0.4rem 0.65rem" };
 const sortDirectionButtonStyle: CSSProperties = { border: "1px solid #64748b", borderRadius: 5, background: "#f8fafc", color: "#334155", cursor: "pointer", fontSize: "1rem", fontWeight: 700, width: 38, height: 32 };
 const sortRemoveButtonStyle: CSSProperties = { border: "none", background: "transparent", color: "#64748b", cursor: "pointer", fontSize: "1rem", lineHeight: 1, padding: "0.2rem" };
