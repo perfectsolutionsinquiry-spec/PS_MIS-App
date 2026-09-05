@@ -118,8 +118,9 @@ jobs:
       # apps/api/package.json's test script is `vitest run`, invoked here via
       # the root's `npm test` -> `npm run test -w apps/api`. This is the
       # suite that matters most in this repo: it proves builder A cannot
-      # read builder B's rows, a session with no builder set sees nothing,
-      # and staff sees everything — against the real RLS policies just
-      # applied above, not a mock of them.
+      # read OR mutate builder B's rows (update, delete, re-parent, insert,
+      # and the INSERT...SELECT payment pattern), that a session with no
+      # builder set sees nothing, and staff sees everything — against the
+      # real RLS policies just applied above, not a mock of them.
       - name: Tenant isolation + API tests
         run: npm test

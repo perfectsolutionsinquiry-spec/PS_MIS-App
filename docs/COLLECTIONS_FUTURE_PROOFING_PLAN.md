@@ -436,7 +436,14 @@ Status meanings:
 - [x] Use tenant context in existing tenant-scoped route database calls.
 - [x] Keep RLS session variables and the business query in the same database
   transaction.
-- [ ] Test that one tenant cannot read or mutate another tenant's data.
+- [x] Test that one tenant cannot read or mutate another tenant's data.
+  (`apps/api/tests/isolation.test.ts`: read isolation was already covered;
+  the write paths — update, delete, re-parenting a row to another tenant,
+  cross-tenant insert, and the API's INSERT...SELECT payment pattern — are
+  now exercised against the real RLS policies in CI. One deliberate scope
+  gap is documented in that file: RLS checks only the row's own
+  `builder_id`, so a raw-SQL payment with mismatched `builder_id`/`customer_id`
+  would satisfy both policy and FK; closing that is Phase 4 work.)
 
 ### Phase 3 — Add audit-event foundations
 
