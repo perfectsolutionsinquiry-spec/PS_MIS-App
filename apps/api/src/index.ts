@@ -1,7 +1,9 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import { dbPing, database } from "./db.js";
-import { requireAuth, requireCapability, withTenantClient } from "./auth.js";
+import { registerAuthRoutes, requireAuth } from "./auth/factory.js";
+import { requireCapability } from "./authorization.js";
+import { withTenantClient } from "./auth/provider.js";
 
 // RULE FOR THIS WHOLE APP: every route here is the only place that decides
 // anything that matters — access checks, calculations, who owns which row.
@@ -15,11 +17,14 @@ const app = Fastify({ logger: true });
 // The frontend runs on a different URL than this API, so the browser needs
 // explicit permission (CORS) to call it. Set FRONTEND_ORIGIN once the
 // frontend has a real deployed URL; until then this allows any origin,
-// which is fine because every route below still requires a valid Clerk
-// session — an open CORS policy alone can't read anyone's data.
+// which is fine because every route below still requires a valid session
+// (Clerk or local) — an open CORS policy alone can't read anyone's data.
 await app.register(cors, {
   origin: process.env.FRONTEND_ORIGIN ?? true,
 });
+
+// Auth-provider-specific routes (e.g. /auth/login for local auth).
+registerAuthRoutes(app);
 
 // Increment 1: prove the pipeline (code -> git -> host -> live URL) works at
 // all, before any real feature exists. This must return 200 even if no
@@ -37,7 +42,7 @@ app.get("/db-check", async () => {
 
 // Increment 3: who am I? Confirms a logged-in session resolves to a real
 // builder (or staff) identity in our database, not just a valid Clerk login.
-app.get("/me", { preHandler: requireAuth }, async (request) => {
+app.get("/me", { preHandler: requireAuth() }, async (request) => {
   return { identity: request.identity };
 });
 
@@ -46,7 +51,7 @@ app.get("/me", { preHandler: requireAuth }, async (request) => {
 // at the database level even if this handler had a bug — but the handler
 // still never accepts a builder_id from the client, only from the verified
 // session, as a second layer.
-app.get("/customers", { preHandler: [requireAuth, requireCapability("customers.read")] }, async (request) => {
+app.get("/customers", { preHandler: [requireAuth(), requireCapability("customers.read")] }, async (request) => {
   if (!database) return { customers: [], note: "No database connected." };
   return withTenantClient(request.context!, async (client) => {
     // Note: the customers table's column is contact_number, not phone (see
@@ -76,7 +81,7 @@ app.get("/customers", { preHandler: [requireAuth, requireCapability("customers.r
 // builder picks from the same bank list, so this reads straight off the
 // database provider, the same exemption /dashboard/overview's loan-by-bank query relies
 // on via its join.
-app.get("/banks", { preHandler: [requireAuth, requireCapability("customers.read")] }, async () => {
+app.get("/banks", { preHandler: [requireAuth(), requireCapability("customers.read")] }, async () => {
   if (!database) return { banks: [] };
   const result = await database.query("select id, name from banks order by name");
   return { banks: result.rows };
@@ -88,7 +93,7 @@ app.get("/banks", { preHandler: [requireAuth, requireCapability("customers.read"
 // never anything the client sends) and has no legitimate reason to see
 // every other builder's name — this would be a real cross-tenant leak for
 // them, unlike /banks above, which is genuinely shared reference data.
-app.get("/builders", { preHandler: [requireAuth, requireCapability("users.manage")] }, async (request, reply) => {
+app.get("/builders", { preHandler: [requireAuth(), requireCapability("users.manage")] }, async (request, reply) => {
   if (!database) return { builders: [] };
   if (request.identity!.kind !== "staff") {
     return reply.code(403).send({ error: "Only staff can list builders." });
@@ -104,7 +109,7 @@ app.get("/builders", { preHandler: [requireAuth, requireCapability("users.manage
 // reasoning as /dashboard/overview's num()/pctOrNull() — pg returns
 // `numeric` as a string and `date` as a JS Date, and the frontend should
 // never have to remember that per field.
-app.get("/customers/:id", { preHandler: [requireAuth, requireCapability("customers.read")] }, async (request, reply) => {
+app.get("/customers/:id", { preHandler: [requireAuth(), requireCapability("customers.read")] }, async (request, reply) => {
   if (!database) return reply.code(503).send({ error: "No database connected." });
   const { id } = request.params as { id: string };
 
@@ -248,7 +253,7 @@ const EDITABLE_CUSTOMER_FIELDS = [
   "stage", "dl_status", "dl_date", "remark",
 ];
 
-app.patch("/customers/:id", { preHandler: [requireAuth, requireCapability("customers.edit")] }, async (request, reply) => {
+app.patch("/customers/:id", { preHandler: [requireAuth(), requireCapability("customers.edit")] }, async (request, reply) => {
   if (!database) return reply.code(503).send({ error: "No database connected." });
   const { id } = request.params as { id: string };
   const body = (request.body ?? {}) as Record<string, unknown>;
@@ -289,7 +294,7 @@ app.patch("/customers/:id", { preHandler: [requireAuth, requireCapability("custo
 // Uses the exact same EDITABLE_CUSTOMER_FIELDS allowlist PATCH above does,
 // so a new customer can never be created with a field this app doesn't
 // already know how to display and edit.
-app.post("/customers", { preHandler: [requireAuth, requireCapability("customers.create")] }, async (request, reply) => {
+app.post("/customers", { preHandler: [requireAuth(), requireCapability("customers.create")] }, async (request, reply) => {
   if (!database) return reply.code(503).send({ error: "No database connected." });
   const body = (request.body ?? {}) as Record<string, unknown>;
 
@@ -342,7 +347,7 @@ app.post("/customers", { preHandler: [requireAuth, requireCapability("customers.
 // no PATCH/DELETE for a recovery_transactions row; correcting one means a
 // separate offsetting entry, not editing history, and that reversal flow
 // isn't built yet (recorded as an open gap, not implemented as a shortcut).
-app.post("/customers/:id/payments", { preHandler: [requireAuth, requireCapability("payments.record")] }, async (request, reply) => {
+app.post("/customers/:id/payments", { preHandler: [requireAuth(), requireCapability("payments.record")] }, async (request, reply) => {
   if (!database) return reply.code(503).send({ error: "No database connected." });
   const { id } = request.params as { id: string };
   // Snake_case body keys, matching PATCH /customers/:id above rather than
@@ -397,7 +402,7 @@ app.post("/customers/:id/payments", { preHandler: [requireAuth, requireCapabilit
 // Overview is a combined figure across every builder. That matches "sees
 // everything across every builder" in CLAUDE.md; a per-builder filter for
 // staff is a later addition, not this one.
-app.get("/dashboard/overview", { preHandler: [requireAuth, requireCapability("reports.read")] }, async (request) => {
+app.get("/dashboard/overview", { preHandler: [requireAuth(), requireCapability("reports.read")] }, async (request) => {
   if (!database) return { kpis: null, pipeline: null, note: "No database connected." };
   return withTenantClient(request.context!, async (client) => {
     const result = await client.query(`
@@ -627,7 +632,7 @@ app.get("/dashboard/overview", { preHandler: [requireAuth, requireCapability("re
 // at a fixed width via sparser axis labels instead of needing a wider grain.
 const ALLOWED_DAILY_WEEKS = [4, 12, 26, 52];
 
-app.get("/dashboard/daily-collection", { preHandler: [requireAuth, requireCapability("reports.read")] }, async (request) => {
+app.get("/dashboard/daily-collection", { preHandler: [requireAuth(), requireCapability("reports.read")] }, async (request) => {
   if (!database) return { dailyCollection: [] };
   const query = request.query as { weeks?: string };
   const weeks = ALLOWED_DAILY_WEEKS.includes(Number(query.weeks)) ? Number(query.weeks) : 12;

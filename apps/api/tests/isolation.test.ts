@@ -19,7 +19,7 @@ import pg from "pg";
 //
 // Every set_config call below uses is_local=true (the third argument) and
 // runs inside an explicit begin/commit around the query that follows it —
-// mirroring apps/api/src/auth.ts's withTenantClient() exactly. That pairing
+// mirroring apps/api/src/auth/provider.ts's withTenantClient() exactly. That pairing
 // matters: set_config(..., true) only lasts for the current transaction,
 // and a bare client.query() call is its own auto-committed transaction, so
 // without the explicit begin/commit the setting reverts before the next

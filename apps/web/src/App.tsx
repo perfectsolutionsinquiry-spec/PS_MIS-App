@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { SignedIn, SignedOut, SignIn, useAuth } from "@clerk/clerk-react";
+import { AuthGate, useAuth } from "./auth";
 import Sidebar from "./Sidebar";
 import CustomersScreen from "./CustomersScreen";
 import CustomerDetailScreen from "./CustomerDetailScreen";
@@ -205,21 +205,13 @@ function Shell() {
   );
 }
 
+// The signed-out/signed-in split (and the branded sign-in screen) lives in
+// the auth seam: AuthGate renders whichever provider's gate is active —
+// Clerk's hosted sign-in screen, or the local email/password form.
 export default function App() {
   return (
-    <>
-      <SignedOut>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "3rem" }}>
-          {/* Real brand asset (apps/web/public/logo-stacked.png), not text —
-              this is the one screen every user sees before they're signed
-              in, so it's worth actual branding rather than a plain widget. */}
-          <img src="/logo-stacked.png" alt="Perfect Solutions" style={{ width: 160, marginBottom: "1.5rem" }} />
-          <SignIn />
-        </div>
-      </SignedOut>
-      <SignedIn>
-        <Shell />
-      </SignedIn>
-    </>
+    <AuthGate>
+      <Shell />
+    </AuthGate>
   );
 }

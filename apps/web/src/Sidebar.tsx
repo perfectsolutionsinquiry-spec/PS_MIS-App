@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { UserButton } from "@clerk/clerk-react";
+import { AuthUserButton } from "./auth";
 import { Button } from "react-aria-components";
 import type { Identity } from "./types";
 import { PS_COLORS } from "./theme";
@@ -220,7 +220,7 @@ export default function Sidebar({
           gap: "0.65rem",
         }}
       >
-        <UserButton />
+        <AuthUserButton fullName={identity?.fullName ?? null} />
         {!collapsed && (
           <div style={{ minWidth: 0 }}>
             <div

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
-import { useAuth } from "@clerk/clerk-react";
+import { useAuth } from "./auth";
 import { Button } from "react-aria-components";
 import { AriaSelect } from "./AriaControls";
 import { AriaDataTable } from "./AriaControls";

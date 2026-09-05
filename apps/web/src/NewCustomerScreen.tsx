@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Button } from "react-aria-components";
 import { AriaSelect, AriaTextField } from "./AriaControls";
 import { PS_COLORS } from "./theme";
-import { useAuth } from "@clerk/clerk-react";
+import { useAuth } from "./auth";
 import type { Builder, Identity } from "./types";
 import { STAGE_OPTIONS, Section, backLinkStyle } from "./CustomerDetailScreen";
 import { fieldLabelStyle, primaryBtnStyle, secondaryBtnStyle } from "./DataTable";

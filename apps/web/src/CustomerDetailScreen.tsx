@@ -4,7 +4,7 @@ import { AriaSelect, AriaTextArea, AriaTextField } from "./AriaControls";
 import { AriaDataTable } from "./AriaControls";
 import { Tab, TabList, Tabs } from "react-aria-components";
 import type { CSSProperties, ReactNode } from "react";
-import { useAuth } from "@clerk/clerk-react";
+import { useAuth } from "./auth";
 import type { Bank, CustomerDetailResponse, Milestone, Payment } from "./types";
 import { formatCompactInr } from "./format";
 import { PS_COLORS } from "./theme";

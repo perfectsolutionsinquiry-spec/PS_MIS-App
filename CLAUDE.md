@@ -46,21 +46,32 @@ number or decides who can see what.
 
 npm-workspaces monorepo:
 
-- `apps/api` — Fastify + TypeScript. Auth via Clerk (`@clerk/backend`).
-  Talks to Postgres via `pg`.
-- `apps/web` — Vite + React + TypeScript. Clerk's prebuilt `<SignIn/>` for
-  login. Fetches from the API with a Bearer token from
-  `useAuth().getToken()`.
-- `db/migrations` — plain numbered `.sql` files, run by hand via Neon's SQL
-  Editor (the sandbox this was built in cannot reach Neon directly over
-  the network — raw Postgres and arbitrary HTTPS are blocked — so all
-  schema work has always gone through Neon's web SQL Editor, never `psql`
-  against the live database).
+- `apps/api` — Fastify + TypeScript. Auth via a provider abstraction
+  (`AUTH_PROVIDER=clerk` | `local` — see `apps/api/src/auth/` and
+  `docs/VENDOR_REPLACEMENT.md`). Talks to Postgres via `pg`.
+- `apps/web` — Vite + React + TypeScript. Sign-in surface also goes through
+  the same provider seam (`apps/web/src/auth/` — Clerk adapter or a
+  self-hosted email/password form, chosen by `VITE_AUTH_PROVIDER`).
+  Fetches from the API with a Bearer token from `useAuth().getToken()`.
+- `db/migrations` — plain numbered `.sql` files. Apply them to **any**
+  Postgres with `npm run migrate --workspace=apps/api` (Neon, Supabase,
+  local Docker Postgres, etc.). The sandbox this was built in cannot reach
+  Neon over the network, so migration 0001-0004 were historically run by
+  hand via Neon's web SQL Editor; the runner baselines those with
+  `MIGRATE_BASELINE_UP_TO=0004_settings_and_soft_delete.sql`.
 - `packages/` — reserved for `calc-engine` (not built yet — see "Not
   started yet" below).
 
-**Tenancy model:** two kinds of logins, both authenticated via Clerk and
-resolved to a local identity by `clerk_user_id`:
+**Vendor replaceability:** Render, Neon, and Clerk are all removable.
+`docs/VENDOR_REPLACEMENT.md` is the runbook for swapping any of them
+(including going fully self-hosted via `docker-compose.yml`); the design
+seams are the `AuthProvider` interface on the API, the `auth/` seam on the
+frontend, the plain-`pg`/`DATABASE_URL` database layer, and the plain
+`.sql` migrations.
+
+**Tenancy model:** two kinds of logins, both authenticated by the configured
+auth provider (`AUTH_PROVIDER` — Clerk or local) and resolved to a local
+identity by `auth_user_id` (renamed from `clerk_user_id` by migration `0005`):
 - `staff_users` — Perfect Solutions' own employees. Not tied to one
   builder; see everything.
 - `builder_users` — a builder's own admins/CRM staff. Scoped to their own
@@ -77,7 +88,7 @@ never from anything the client claims:
 select set_config('app.is_staff', 'true'|'', true);
 select set_config('app.current_builder_id', '<uuid>'|'', true);
 ```
-See `apps/api/src/auth.ts` (`withTenantClient`) for exactly how.
+See `apps/api/src/auth/provider.ts` (`withTenantClient`) for exactly how.
 
 ## Live deployment
 
@@ -317,7 +328,7 @@ schema/RLS change.
    rendered as "No customers yet." Both fixed.
 
 Full reasoning for all of these is inline as comments in
-`db/migrations/0003_force_rls.sql` and `apps/api/src/auth.ts`.
+`db/migrations/0003_force_rls.sql` and `apps/api/src/auth/provider.ts`.
 
 ## Current UI
 

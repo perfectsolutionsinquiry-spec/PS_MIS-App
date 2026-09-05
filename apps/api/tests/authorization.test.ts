@@ -4,7 +4,7 @@ import {
   hasCollectionsCapability,
   normalizeCollectionsRole,
 } from "../src/authorization.js";
-import { requireCapability } from "../src/auth.js";
+import { requireCapability } from "../src/authorization.js";
 
 describe("Collections authorization catalogue", () => {
   it("preserves current legacy role names while normalizing them", () => {

@@ -159,10 +159,10 @@ flowchart LR
         FE["apps/web — Vite + React<br/>(Sidebar / Overview / Customers / CustomerDetail)"]
     end
     subgraph Render
-        API["apps/api — Fastify<br/>(auth.ts, index.ts)"]
+        API["apps/api — Fastify<br/>(auth/, index.ts)"]
     end
-    subgraph Clerk
-        CL["Clerk — who is this person?"]
+    subgraph Clerk or local auth
+        CL["Auth provider — who is this person?<br/>(AUTH_PROVIDER=clerk | local)"]
     end
     subgraph Neon
         DB[("Postgres — the data,<br/>row-level security enforced")]
@@ -178,8 +178,10 @@ flowchart LR
 The one rule everything else follows: **the API decides, the frontend
 displays.** No business number is computed in `apps/web`, and no access
 decision is made there either — every route re-derives who's asking from
-the verified Clerk token, never from anything the client claims. Full
-reasoning and history: `CLAUDE.md`.
+the verified session token (Clerk or local auth — the provider is chosen by
+the `AUTH_PROVIDER` env var, never by route code), never from anything the
+client claims. Full reasoning and history: `CLAUDE.md`. How to swap any of
+the three hosted vendors (Render / Neon / Clerk): `docs/VENDOR_REPLACEMENT.md`.
 
 ---
 
@@ -209,7 +211,8 @@ not application chrome.
 ## 2. Database schema map
 
 13 tables, `db/migrations/0001_init.sql` (`0002`/`0003` alter auth columns
-and RLS — see §2.3). Every tenant-scoped table carries `builder_id`
+and RLS — see §2.3; `0004` adds soft-delete + `app_settings`; `0005` makes
+the auth column vendor-neutral). Every tenant-scoped table carries `builder_id`
 directly, even where it could be derived through a join, so the same
 row-level-security rule applies everywhere without tracing through
 multiple tables.
@@ -320,11 +323,14 @@ sets this false. `GET /customers` filters to `is_active = true`;
 `GET /customers/:id` does not (an id you already have still resolves) —
 there's no "view archived / restore" screen yet, a disclosed gap.
 
-**`0004` is a manual step, same as `0001`-`0003`** — written and committed
-here, but only takes effect once it's actually run against Neon's SQL
-Editor. Until then, `DELETE /customers/:id` and the highlight-fields
-settings routes will 500 (the column/table they need doesn't exist yet)
-— those routes are not deployed until this migration is confirmed run.
+**`0004`/`0005` are manual steps, same as `0001`-`0003`** — written and
+committed here, but only take effect once actually run. Use
+`npm run migrate --workspace=apps/api` against any Postgres (baseline an
+already-migrated database with
+`MIGRATE_BASELINE_UP_TO=0004_settings_and_soft_delete.sql`). Until then,
+`DELETE /customers/:id`, the highlight-fields settings routes, and local
+auth (`password_hash`/`email`) will 500/misbehave — those routes are not
+deployed until this migration is confirmed run.
 
 ### 2.3 Row-level security, in one paragraph
 
@@ -334,7 +340,7 @@ binds even to the table's owning DB role, not just other roles — see
 `db/migrations/0003_force_rls.sql`'s comments for the real production bug
 this fixed). The API sets `app.is_staff` / `app.current_builder_id` as
 Postgres session variables, scoped to one transaction
-(`apps/api/src/auth.ts`, `withTenantClient`), from the *verified* Clerk
+(`apps/api/src/auth/provider.ts`, `withTenantClient`), from the *verified*
 identity — never from anything the client sends. `builder_users` has RLS
 turned **off** on purpose: the very query that looks up which builder a
 login belongs to has to run *before* any tenant context exists, so RLS on
@@ -358,16 +364,16 @@ document flagged (its "defect 1") — this schema avoids it by construction.
 ```mermaid
 sequenceDiagram
     participant U as User's browser
-    participant C as Clerk
-    participant A as API (auth.ts)
+    participant C as Auth provider (Clerk or local)
+    participant A as API (auth/provider.ts)
     participant D as Postgres
 
     U->>C: sign in
     C-->>U: session token
     U->>A: any request, Authorization: Bearer <token>
-    A->>C: verifyToken()
-    C-->>A: clerkUserId
-    A->>D: select from staff_users / builder_users where clerk_user_id = ?
+    A->>C: provider.verifyToken()
+    C-->>A: authUserId
+    A->>D: select from staff_users / builder_users where auth_user_id = ?
     D-->>A: identity (staff, or builder + builderId)
     A->>D: begin; set_config(app.is_staff / app.current_builder_id)
     A->>D: the actual query (same transaction)
@@ -379,7 +385,8 @@ sequenceDiagram
 Where this lives: `requireAuth` (verifies the token, rejects with 401/403)
 and `withTenantClient` (sets the session variables and runs the real query
 in the same transaction — the `begin`/`commit` matters, see the long
-comment on it) — both in `apps/api/src/auth.ts`.
+comment on it) — both in `apps/api/src/auth/provider.ts`. The concrete
+provider (Clerk vs local) is chosen in `apps/api/src/auth/factory.ts`.
 
 ### 3.2 Opening a customer's record
 
@@ -437,7 +444,9 @@ reference data or unauthenticated).
 |---|---|---|---|
 | `GET /health` | Liveness check for Render. | none | — |
 | `GET /db-check` | Confirms the API can reach Postgres. | none | — |
-| `GET /me` | Resolves the caller's identity (staff or builder) from their Clerk token. | required | — |
+| `GET /me` | Resolves the caller's identity (staff or builder) from their session token (Clerk or local). | required | — |
+| `POST /auth/login` | Local auth only: email + password → `{ token, identity }`. Registered by `registerAuthRoutes` when `AUTH_PROVIDER=local`. | none | — |
+| `POST /auth/set-password` | Local auth only: staff sets a user's password. Registered by `registerAuthRoutes` when `AUTH_PROVIDER=local`. | required (staff) | — |
 | `GET /customers` | The list view's handful of columns, every customer this identity can see, capped at 1000 (stopgap, not real pagination). | required | Yes |
 | `POST /customers` | Creates a customer from `NewCustomerScreen.tsx`'s form fields. Staff must pass `builder_id`; a builder identity always uses their own. | required | Yes |
 | `GET /customers/:id` | The full record + co-applicants + payments + milestones + totals. See §3.2. | required | Yes |
@@ -465,13 +474,17 @@ it talks to.
 
 | File | Renders / does | Calls |
 |---|---|---|
-| `main.tsx` | Mounts the app, wraps it in `ClerkProvider` (with the brand-font `appearance` prop), imports `index.css`. | — |
+| `main.tsx` | Mounts the app inside the auth-agnostic `AuthProvider` (picked by `VITE_AUTH_PROVIDER` — Clerk or local), imports `index.css`. | — |
+| `auth/context.tsx` | The frontend auth seam: `AuthContext`, `useAuth()` (`isSignedIn`, `getToken`, `signOut`, `user`), and the `AUTH_PROVIDER` constant from `VITE_AUTH_PROVIDER`. | — |
+| `auth/clerk.tsx` | Clerk adapter: bridges `ClerkProvider`/`useAuth`/`SignedIn`/`SignedOut`/`SignIn`/`UserButton` into the shared `AuthContext`. All `@clerk/clerk-react` usage lives here. | — |
+| `auth/local.tsx` | Local adapter: JWT-in-localStorage sessions against `POST /auth/login`, a branded email/password sign-in screen, and a sign-out control. No external auth service. | `POST /auth/login` |
+| `auth/index.tsx` | Picks the active adapter (Clerk vs local) and exports `AuthProvider`, `AuthGate`, `AuthUserButton`, `useAuth`. Screens import from here, never from a provider SDK. | — |
 | `vite.config.ts` | Builds the Vite frontend and copies the generated `index.html` to `dist/404.html`, allowing direct refreshes of client-side routes on the Render static host. | — |
 | `index.css` | The one global CSS file in an otherwise fully-inline-styled app — loads IBM Plex Sans, sets it as the `body` default, and provides responsive breakpoints for the inline advanced filter panel and field personalizer so controls reflow on narrow screens. | — |
 | `theme.ts` | Single source of truth for the Perfect Solutions brand colour tokens used by new and shared UI styles. | — |
 | `AriaControls.tsx` | Shared React Aria Components wrappers for text fields, textareas, selects, checkboxes, and data tables. These preserve the application's existing visual styles while standardizing accessible interaction behavior. | — |
 | `App.tsx` | Top-level shell: signed-out vs signed-in, fetches `/me` + the customer list + `/dashboard/overview` on load, owns URL-backed customer list/detail navigation, and renders `Sidebar` + the active screen. Initial `/customers` and `/customers/:id` paths select the Customers screen before the first render, so a direct refresh preserves the requested screen. Customer detail values are fetched by `CustomerDetailScreen` only after a record is opened. `loadCustomers()` returns the fresh array (not just setting state) so a caller mid-function — e.g. after creating a customer — can read the new row immediately rather than the stale pre-refresh `customers` closure. | `/me`, `/customers`, `/dashboard/overview` |
-| `Sidebar.tsx` | Dark nav rail — Action Items / Dashboard (Overview, +3 disabled "soon") / Records (Customers, +2 disabled) / Settings. Brand mark + collapse toggle + Clerk's `<UserButton/>`. | — |
+| `Sidebar.tsx` | Dark nav rail — Action Items / Dashboard (Overview, +3 disabled "soon") / Records (Customers, +2 disabled) / Settings. Brand mark + collapse toggle + the auth-agnostic `AuthUserButton` (Clerk's `<UserButton/>` or local sign-out). | — |
 | `PageHeader.tsx` | Shared all-caps title and actions. The Customers list uses it for the Customer - All title, count, relative refresh age, and refresh button; email/export remain disabled ("soon"). | — |
 | `OverviewScreen.tsx` | 6 KPI tiles + 4 chart cards (`DonutChart`, `BarChart` ×2, `LineChart`). `KpiTile` is the reusable tile; `ChartCard` (in this file) is the reusable "chart + View as table" wrapper. | `/dashboard/daily-collection` (range changes only — the rest arrives via `App.tsx`'s initial fetch) |
 | `DonutChart.tsx` | The disbursement-split donut — hover-explode + anchored tooltip, 4 categories (violet as the accessibility-passing 4th color, not the docs-default yellow — see the file's own comment). | — |

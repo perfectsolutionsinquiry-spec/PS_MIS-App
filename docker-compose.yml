@@ -1,0 +1,77 @@
+# docker-compose.yml — run the entire platform self-hosted with zero cloud
+# dependencies: local Postgres, local auth (AUTH_PROVIDER=local), containerised
+# API and web app. This is the "keep everything in India / on-prem" path.
+#
+# Usage:
+#   docker compose up --build
+#   Web:   http://localhost:8088
+#   API:   http://localhost:3000/health
+#
+# To switch back to cloud providers, just change the environment variables
+# (DATABASE_URL -> Neon/Supabase/Render/Railway, AUTH_PROVIDER=clerk with
+# CLERK_SECRET_KEY) and rebuild — no code changes.
+#
+# First login (local auth): see docs/VENDOR_REPLACEMENT.md.
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ps
+      POSTGRES_PASSWORD: ps
+      POSTGRES_DB: ps_mis
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ps -d ps_mis"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # One-shot: applies db/migrations/*.sql, then exits.
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    command: ["node", "dist/migrate.js"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://ps:ps@db:5432/ps_mis
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    command: ["node", "dist/index.js"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgresql://ps:ps@db:5432/ps_mis
+      AUTH_PROVIDER: local
+      # Generate a real value: openssl rand -base64 32
+      LOCAL_AUTH_SECRET: change-me-replace-with-openssl-rand-base64-32
+      LOCAL_AUTH_TOKEN_TTL_SECONDS: "86400"
+      FRONTEND_ORIGIN: http://localhost:8088
+      PORT: "3000"
+    ports:
+      - "3000:3000"
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_API_URL: http://localhost:3000
+        VITE_AUTH_PROVIDER: local
+    depends_on:
+      - api
+    ports:
+      - "8088:80"
+
+volumes:
+  db-data:

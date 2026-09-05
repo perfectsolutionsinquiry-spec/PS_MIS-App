@@ -52,16 +52,20 @@ freshly generated `id` (a UUID). Copy that `id` — you need it in the next step
 
 ## Step 3 — Insert the `builder_users` row
 
+> The auth column is `auth_user_id` since migration `0005_vendor_neutral_auth.sql`
+> renamed it from `clerk_user_id` (values are the same — Clerk's `user_...` id).
+> Make sure `0005` is applied before running this (`npm run migrate --workspace=apps/api`).
+
 ```sql
-insert into builder_users (builder_id, email, full_name, role, clerk_user_id)
+insert into builder_users (builder_id, email, full_name, role, auth_user_id)
 values ('BUILDERS_ID_FROM_STEP_2', 'their-email@example.com', 'THEIR FULL NAME', 'admin',
         'CLERK_USER_ID_FROM_STEP_1')
-returning id, builder_id, email, clerk_user_id;
+returning id, builder_id, email, auth_user_id;
 ```
 
 **A good result looks like:** one row back, `builder_id` matching step 2's id exactly,
-`clerk_user_id` matching step 1's id exactly. If this errors with something mentioning
-`builder_users_clerk_user_id_key`, that Clerk user is already linked to a builder_users
+`auth_user_id` matching step 1's id exactly. If this errors with something mentioning
+`builder_users_auth_user_id_key`, that Clerk user is already linked to a builder_users
 row somewhere — stop and figure out why before continuing, don't insert a second row for
 the same person.
 

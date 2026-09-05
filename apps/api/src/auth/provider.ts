@@ -1,17 +1,94 @@
+// Auth provider interface — the single seam between this app and whatever
+// service verifies "who is this person?".
+//
+// Two implementations exist:
+//   - clerk.ts  — verifies JWTs issued by Clerk (cloud auth)
+//   - local.ts  — verifies JWTs issued by this API itself (self-hosted auth)
+//
+// To add a third provider (Auth0, Supabase Auth, Firebase, Keycloak…):
+//   1. Implement this interface in a new file
+//   2. Register it in factory.ts
+//   3. Set AUTH_PROVIDER to its name in the environment
+// No route code changes needed.
+
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { database } from "./db.js";
-import { createClerkIdentityProvider, type IdentityProvider } from "./identity-provider.js";
 import {
   capabilitiesForRole,
   type CollectionsCapability,
-} from "./authorization.js";
+} from "../authorization.js";
 
-// Everything about WHO can log in and WHETHER their password is right is
-// Clerk's problem, not ours (see db/migrations/0002_clerk_auth.sql for why).
-// Our job starts after Clerk has already verified them: given a Clerk user
-// id, look up which builder they belong to (or whether they're Perfect
-// Solutions staff with cross-builder access) — that mapping lives only in
-// our own database.
+export interface AuthProvider {
+  /** Human-readable name for logs/errors. */
+  readonly name: string;
+
+  /**
+   * Verify a Bearer session token and return the verified user id (the same
+   * id stored in staff_users.auth_user_id / builder_users.auth_user_id).
+   * Returns null if the token is invalid or expired. Throws only when the
+   * provider itself is misconfigured (e.g. a missing secret key).
+   */
+  verifyToken(token: string): Promise<string | null>;
+
+  /**
+   * Create a session token for a user. Only used by the local provider's
+   * /auth/login route — Clerk issues its own tokens via its hosted flow.
+   */
+  issueToken?(userId: string): Promise<string>;
+}
+
+/**
+ * The Fastify preHandler hook that every protected route uses. Delegates
+ * token verification to the configured provider, then resolves the verified
+ * user id to our own staff/builder identity in the database.
+ */
+export function makeRequireAuth(provider: AuthProvider) {
+  return async function requireAuth(request: FastifyRequest, reply: FastifyReply) {
+    const authHeader = request.headers.authorization;
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    if (!token) {
+      reply.code(401).send({ error: "No session token provided." });
+      return reply;
+    }
+
+    let userId: string;
+    try {
+      userId = await provider.verifyToken(token);
+    } catch (err) {
+      // A throw here means the provider itself is misconfigured (e.g. a
+      // missing secret key), not that this particular token is bad.
+      reply.code(500).send({
+        error: `Auth is not configured on this server yet. ${(err as Error).message}`,
+      });
+      return reply;
+    }
+    if (!userId) {
+      reply.code(401).send({ error: "Session token is invalid or expired." });
+      return reply;
+    }
+
+    const identity = await lookupIdentity(userId);
+    if (!identity) {
+      reply.code(403).send({
+        error: "Logged in, but this account isn't set up in Perfect Solutions yet. Ask a staff member to add you.",
+      });
+      return reply;
+    }
+
+    request.identity = identity;
+    request.context = {
+      applicationId: "collections",
+      userId: identity.kind === "staff" ? identity.staffId : identity.builderUserId,
+      tenantId: identity.kind === "staff" ? null : identity.builderId,
+      correlationId: request.id,
+      identity,
+      capabilities: identity.capabilities,
+    };
+  };
+}
+
+// --- Identity resolution (shared by every provider) ---
+
+import { database } from "../db.js";
 
 export type Identity =
   | {
@@ -46,17 +123,12 @@ declare module "fastify" {
   }
 }
 
-const clerkSecretKey = process.env.CLERK_SECRET_KEY;
-const identityProvider: IdentityProvider | null = clerkSecretKey
-  ? createClerkIdentityProvider(clerkSecretKey)
-  : null;
-
-async function lookupIdentity(clerkUserId: string): Promise<Identity | null> {
+async function lookupIdentity(authUserId: string): Promise<Identity | null> {
   if (!database) return null;
 
   const staff = await database.query(
-    "select id, full_name, role from staff_users where clerk_user_id = $1",
-    [clerkUserId]
+    "select id, full_name, role from staff_users where auth_user_id = $1",
+    [authUserId]
   );
   if (staff.rows.length > 0) {
     const row = staff.rows[0];
@@ -73,8 +145,8 @@ async function lookupIdentity(clerkUserId: string): Promise<Identity | null> {
   }
 
   const builderUser = await database.query(
-    "select id, builder_id, full_name, role from builder_users where clerk_user_id = $1",
-    [clerkUserId]
+    "select id, builder_id, full_name, role from builder_users where auth_user_id = $1",
+    [authUserId]
   );
   if (builderUser.rows.length > 0) {
     const row = builderUser.rows[0];
@@ -91,65 +163,10 @@ async function lookupIdentity(clerkUserId: string): Promise<Identity | null> {
   return null;
 }
 
-// Fastify preHandler hook: verifies the Clerk session token on every
-// protected route, then resolves it to our own builder/staff identity.
-// Never trusts a builder_id or "is staff" claim sent by the client itself —
-// only what this lookup, driven by Clerk's verified user id, produces.
-export async function requireAuth(request: FastifyRequest, reply: FastifyReply) {
-  if (!identityProvider) {
-    reply.code(500).send({ error: "Auth is not configured on this server yet (CLERK_SECRET_KEY missing)." });
-    return reply;
-  }
-
-  const authHeader = request.headers.authorization;
-  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
-  if (!token) {
-    reply.code(401).send({ error: "No session token provided." });
-    return reply;
-  }
-
-  let clerkUserId: string;
-  try {
-    const verified = await identityProvider.verifySession(token);
-    clerkUserId = verified.userId;
-  } catch {
-    reply.code(401).send({ error: "Session token is invalid or expired." });
-    return reply;
-  }
-
-  const identity = await lookupIdentity(clerkUserId);
-  if (!identity) {
-    reply.code(403).send({
-      error: "Logged in, but this account isn't set up in Perfect Solutions yet. Ask a staff member to add you.",
-    });
-    return reply;
-  }
-
-  request.identity = identity;
-  request.context = {
-    applicationId: "collections",
-    userId: identity.kind === "staff" ? identity.staffId : identity.builderUserId,
-    tenantId: identity.kind === "staff" ? null : identity.builderId,
-    correlationId: request.id,
-    identity,
-    capabilities: identity.capabilities,
-  };
-}
-
-export function requireCapability(capability: CollectionsCapability) {
-  return async (request: FastifyRequest, reply: FastifyReply) => {
-    if (!request.context?.capabilities.has(capability)) {
-      return reply.code(403).send({
-        error: `This account does not have the ${capability} capability.`,
-      });
-    }
-  };
-}
-
 // Runs `fn` with a database client whose row-level-security session
-// variables are set to match `identity` — every query inside `fn` is then
-// automatically scoped by Postgres itself, not by remembering a WHERE
-// clause. See db/migrations/0001_init.sql.
+// variables are set to match the request context — every query inside `fn`
+// is then automatically scoped by Postgres itself, not by remembering a
+// WHERE clause. See db/migrations/0001_init.sql.
 export async function withTenantClient<T>(
   context: RequestContext,
   fn: (client: import("pg").PoolClient) => Promise<T>
