@@ -248,8 +248,6 @@ the printed brochure uses for its titles and labels.
 - A reversal/correction flow for a wrongly-recorded payment.
 - Any admin screen for adding new staff or builder logins — that's still
   done by hand, by whoever has direct database access.
-- Real pagination on the Customers list (it currently shows up to 1,000
-  customers at once, which is fine today and won't be forever).
 
 ---
 

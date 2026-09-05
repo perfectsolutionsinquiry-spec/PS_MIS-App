@@ -20,7 +20,7 @@
 > not an empty shell. One real constraint this surfaced: Neon's free plan retains only
 > **6 hours** of point-in-time history — a problem caught more than 6 hours after it
 > happened cannot be recovered this way, worth knowing before treating PITR as a safety
-> net for anything older than that. Item 5 is what's left before builder #2 — a fuller
+> net for anything older than that. Items 5-9 are done. What.s left before builder #6: — a fuller
 > draft than just the support-access clause now exists at
 > `docs/BUILDER_AGREEMENT_DRAFT.md` (guardrail #10's full agreement scope, requested to
 > give a lawyer more to start from), with `docs/SUPPORT_ACCESS_COMMITMENT.md` covering
@@ -122,12 +122,12 @@ a lot once there are enough builders that nobody is checking each one personally
    asking anyone for help. This is explicitly the answer to "what if you disappear" —
    it's a trust feature, not a nice-to-have, and it's much easier to build once than to
    retrofit after ten builders are relying on the platform.
-8. **Real pagination on every listing, not `limit 1000`.** The current `/customers`
+8. **Real pagination on every listing, not `limit 1000`.** ? DONE � page sizes 10/20/50/100/500, with First/Prev/Page/Next/Last controls. The current `/customers`
    route caps at 1000 rows as a stopgap — it already silently hid data once (88 of 288
    real customers, caught by comparing on-screen counts against Neon). Fine for one
    builder at ~300 customers; not fine once several builders' real datasets are live
    simultaneously.
-9. **Rate limiting and basic abuse protection**, once any part of this is reachable by
+9. **Rate limiting and basic abuse protection.** ? DONE � `@fastify/rate-limit`, 100 req/min per IP, active now. Low risk today, worth
    people outside Perfect Solutions' own staff and builder logins — low risk today, worth
    flagging before any public-facing form (lead capture, connector signup) goes live.
 10. **A signed agreement per builder**, covering: what Perfect Solutions can see and log,

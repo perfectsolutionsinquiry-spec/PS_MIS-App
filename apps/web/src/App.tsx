@@ -22,6 +22,7 @@ function Shell() {
   const { getToken } = useAuth();
   const [identity, setIdentity] = useState<Identity | null>(null);
   const [customers, setCustomers] = useState<Customer[] | null>(null);
+  const [customerPagination, setCustomerPagination] = useState({ total: 0, page: 1, limit: 20, totalPages: 0 });
   const [kpis, setKpis] = useState<DashboardKpis | null>(null);
   const [pipeline, setPipeline] = useState<PipelineData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -55,9 +56,9 @@ function Shell() {
   // label) can use that directly instead of reading the `customers`
   // state variable, which is still the pre-refresh value inside the same
   // function body React state updates don't apply synchronously within.
-  async function loadCustomers(): Promise<Customer[]> {
+  async function loadCustomers(page: number = 1, limit: number = 20): Promise<Customer[]> {
     const token = await getToken();
-    const res = await fetch(`${API_URL}/customers`, { headers: { Authorization: `Bearer ${token}` } });
+    const res = await fetch(`${API_URL}/customers?page=${page}&limit=${limit}`, { headers: { Authorization: `Bearer ${token}` } });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
       // A failed /customers call used to silently render as "No customers
@@ -99,7 +100,7 @@ function Shell() {
 
         // Both only need the token, not each other or /me's result, so they
         // run together rather than one after another.
-        const [, overviewRes] = await Promise.all([loadCustomers(), fetch(`${API_URL}/dashboard/overview`, { headers })]);
+        const [, overviewRes] = await Promise.all([loadCustomers(1, 20), fetch(`${API_URL}/dashboard/overview`, { headers })]);
 
         const overviewBody = await overviewRes.json().catch(() => ({}));
         if (!overviewRes.ok) {
@@ -164,13 +165,16 @@ function Shell() {
             {activeView.kind === "list" && (
               <CustomersScreen
                 customers={customers}
-                onRefresh={() => void loadCustomers()}
+                onRefresh={() => void loadCustomers(customerPagination.page, customerPagination.limit)}
                 onSelect={(id) => {
                   openCustomerTab(id);
                 }}
                 onNew={() => {
                   setActiveView({ kind: "new-customer" });
                 }}
+                pagination={customerPagination}
+                onPageChange={(page) => void loadCustomers(page, customerPagination.limit)}
+                onPageSizeChange={(limit) => void loadCustomers(1, limit)}
               />
             )}
 
@@ -189,7 +193,7 @@ function Shell() {
                   // still last render's value at this point in the
                   // function, not what was just fetched.
                   closeNewCustomerTab();
-                  await loadCustomers();
+                  await loadCustomers(customerPagination.page, customerPagination.limit);
                   openCustomerTab(id);
                 }}
               />

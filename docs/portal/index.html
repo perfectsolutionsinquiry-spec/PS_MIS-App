@@ -430,7 +430,7 @@ const CATEGORIES = [
           <tr><td><code>GET /health</code></td><td>Liveness check for Render.</td><td>—</td></tr>
           <tr><td><code>GET /db-check</code></td><td>Confirms the API can reach Postgres.</td><td>—</td></tr>
           <tr><td><code>GET /me</code></td><td>Resolves the caller's identity (staff or builder).</td><td>—</td></tr>
-          <tr><td><code>GET /customers</code></td><td>List view columns, capped at 1000 (stopgap, not real pagination).</td><td>Yes</td></tr>
+          <tr><td><code>GET /customers</code></td><td>List view columns, paginated. Accepts `page` (1-based, default 1) and `limit` (10/20/50/100/500, default 20) query params. Returns `{ customers, total, page, limit, totalPages }`. Staff access is logged to `audit_log`.</td><td>Yes</td></tr>
           <tr><td><code>POST /customers</code></td><td>Creates a customer from NewCustomerScreen's fields. Staff pass <code>builder_id</code> explicitly.</td><td>Yes</td></tr>
           <tr><td><code>GET /customers/:id</code></td><td>Full record + co-applicants + payments + milestones + totals.</td><td>Yes</td></tr>
           <tr><td><code>PATCH /customers/:id</code></td><td>Updates only fields in <code>EDITABLE_CUSTOMER_FIELDS</code> (hardcoded allowlist).</td><td>Yes</td></tr>
@@ -538,6 +538,7 @@ const CATEGORIES = [
           <li><strong>Search everywhere</strong> — the box above the table searches name, phone, email, and stage at once.</li>
           <li><strong>Advanced filters</strong> — the funnel expands the builder within the list page. Conditions joined with <strong>and</strong> must all match the same customer; <strong>or</strong> creates an alternative condition set. Sort fields stay hidden until you click compact <strong>Add Sort</strong>.</li>
           <li><strong>Choose which columns show, and their order</strong> — the gear icon opens a field personalizer with searchable Available columns and Selected columns cards. Tick available fields to add them, remove selected fields, arrange order with arrows, then Apply. A disabled <strong>Reset to default</strong> option is shown as a placeholder until default settings move to Settings. <strong>Remembered on this browser/device only.</strong></li>
+          <li><strong>Pagination</strong> — shows 20 customers at a time by default. Use the page size selector at the bottom to show 10, 20, 50, 100, or 500 rows per page. Navigate between pages with the First/Previous/Page number/Next/Last controls. The range shown (e.g. "21–40 of 288") updates as you page through.</li>
           <li><strong>New customer</strong> — a full page, not a popup: name, agreement no., phone, email, stage, plus a builder picker for staff. Required fields marked with a red *. Everything else gets filled in by opening the new customer and editing it.</li>
         </ul>
         <p>Clicking any row opens that customer's full record. Use the record's Back control to return to the customer list. "New customer" is a full-page view, not a popup.</p>
@@ -587,7 +588,7 @@ const CATEGORIES = [
           <li>Editing co-applicants from the customer record.</li>
           <li>A reversal/correction flow for a wrongly-recorded payment.</li>
           <li>Any admin screen for adding staff/builder logins — still done by hand.</li>
-          <li>Real pagination on the Customers list (shows up to 1,000 at once today).</li>
+          
         </ul>
       `},
     ]

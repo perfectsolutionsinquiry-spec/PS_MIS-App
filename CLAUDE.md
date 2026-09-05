@@ -425,7 +425,7 @@ someone's logged in, especially if a tile looks off.
 - `packages/calc-engine` — porting the verified calculation logic (basic
   value, agreement value, GST/stamp-duty breakdowns) from the existing MIS
   HTML tool.
-- Real pagination on `/customers` (see above).
+- Real pagination on `/customers` \(see above\) � ? DONE \(page sizes: 10/20/50/100/500\)
 - CI (`.github/workflows/ci.yml`) reports pass/fail on every push but doesn't
   yet **block** one from landing — this repo has no PR gate, and GitHub
   Actions runs after a push is already received. That needs branch

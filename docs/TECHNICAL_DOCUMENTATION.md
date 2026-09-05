@@ -254,6 +254,7 @@ erDiagram
 | `co_applicants` | A customer's co-applicant(s) on the loan/agreement. | Yes |
 | `customer_milestones` | One row per customer per milestone — generated from `payment_milestones`, tracks `amount_due` / `due_date` / `status`. | Yes |
 | `recovery_transactions` | The actual payment ledger — every rupee received, one row per payment. Source of truth for "amount received." Insert-only (§4, `POST /customers/:id/payments`). | Yes |
+| `audit_log` | Staff access audit trail (Guardrail #6, `db/migrations/0006_audit_log.sql`). Logs every staff access to tenant-scoped routes: who (`staff_id`), when (`accessed_at`), which route, which builder (when scoped), and source IP. Not tenant-scoped itself — always writable by the accessing staff's own `staff_id`. Indexed by `staff_id + accessed_at` and `builder_id + accessed_at`. | No — global audit table, not tenant data |
 | `app_settings` | *(`0004_settings_and_soft_delete.sql`)* Generic key/value platform config — starting with `customer_highlight_fields`, which fields show at the top of a customer record. | No — app-wide UI config, not tenant data |
 
 ### 2.2.1 Schema rationale and future direction
@@ -447,7 +448,7 @@ reference data or unauthenticated).
 | `GET /me` | Resolves the caller's identity (staff or builder) from their session token (Clerk or local). | required | — |
 | `POST /auth/login` | Local auth only: email + password → `{ token, identity }`. Registered by `registerAuthRoutes` when `AUTH_PROVIDER=local`. | none | — |
 | `POST /auth/set-password` | Local auth only: staff sets a user's password. Registered by `registerAuthRoutes` when `AUTH_PROVIDER=local`. | required (staff) | — |
-| `GET /customers` | The list view's handful of columns, every customer this identity can see, capped at 1000 (stopgap, not real pagination). | required | Yes |
+| `GET /customers` | The list view's handful of columns, paginated. Accepts `page` (1-based, default 1) and `limit` (10/20/50/100/500, default 20) query params. Returns `{ customers, total, page, limit, totalPages }`. Staff access is logged to `audit_log`. | required | Yes |
 | `POST /customers` | Creates a customer from `NewCustomerScreen.tsx`'s form fields. Staff must pass `builder_id`; a builder identity always uses their own. | required | Yes |
 | `GET /customers/:id` | The full record + co-applicants + payments + milestones + totals. See §3.2. | required | Yes |
 | `PATCH /customers/:id` | Updates only fields in `EDITABLE_CUSTOMER_FIELDS` (a hardcoded allowlist — never built from the request body's own keys). | required | Yes |

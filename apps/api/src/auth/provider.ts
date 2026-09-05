@@ -212,3 +212,41 @@ export async function withTenantClient<T>(
     client.release();
   }
 }
+
+// Logs staff access to the audit_log table (Guardrail #6 from
+// docs/LAUNCH_GUARDRAILS.md). Best-effort: a logging failure must never
+// block the actual request, so errors here are swallowed after logging.
+// Called from route handlers where staff access happens, BEFORE the
+// withTenantClient call (so the log itself is not tenant-scoped — it needs
+// to record access to any builder's data, not be filtered by RLS).
+export async function logStaffAccess(
+  request: FastifyRequest,
+  route: string,
+  builderId: string | null,
+  builderName: string | null
+): Promise<void> {
+  if (!database) return;
+  const identity = request.identity;
+  if (!identity || identity.kind !== "staff") return;
+
+  try {
+    // Insert directly via database (not withTenantClient) so RLS doesn't
+    // filter the audit log insert — staff_id is always the accessing staff.
+    await database.query(
+      `insert into audit_log (staff_id, staff_email, route, builder_id, builder_name, method, ip_address)
+       values ($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        identity.staffId,
+        identity.fullName ?? "unknown",
+        route,
+        builderId,
+        builderName,
+        request.method,
+        request.ip,
+      ]
+    );
+  } catch (err) {
+    // Audit logging must never break the actual request. Log and continue.
+    request.log?.error?.({ err, msg: "Failed to write audit log" });
+  }
+}

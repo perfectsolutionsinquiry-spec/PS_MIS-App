@@ -1,9 +1,10 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
+import rateLimit from "@fastify/rate-limit";
 import { dbPing, database } from "./db.js";
 import { registerAuthRoutes, requireAuth } from "./auth/factory.js";
 import { requireCapability } from "./authorization.js";
-import { withTenantClient } from "./auth/provider.js";
+import { withTenantClient, logStaffAccess } from "./auth/provider.js";
 
 // RULE FOR THIS WHOLE APP: every route here is the only place that decides
 // anything that matters — access checks, calculations, who owns which row.
@@ -25,6 +26,16 @@ await app.register(cors, {
 
 // Auth-provider-specific routes (e.g. /auth/login for local auth).
 registerAuthRoutes(app);
+
+// Rate limiting: protect every route from abuse. Guardrail #9 from
+// docs/LAUNCH_GUARDRAILS.md. 100 requests per minute per IP is generous
+// for normal use but stops brute-force and scraping attempts. The /health
+// endpoint is exempt (no auth needed, used by uptime monitors).
+await app.register(rateLimit, {
+  max: 100,
+  timeWindow: "1 minute",
+  keyGenerator: (request) => request.ip,
+});
 
 // Increment 1: prove the pipeline (code -> git -> host -> live URL) works at
 // all, before any real feature exists. This must return 200 even if no
@@ -51,28 +62,43 @@ app.get("/me", { preHandler: requireAuth() }, async (request) => {
 // at the database level even if this handler had a bug — but the handler
 // still never accepts a builder_id from the client, only from the verified
 // session, as a second layer.
+//
+// Pagination: supports page (1-based) and limit (page size) query params.
+// Valid page sizes are 10, 20, 50, 100, 500 — anything else defaults to 20.
+// Returns total count so the frontend can render page numbers.
 app.get("/customers", { preHandler: [requireAuth(), requireCapability("customers.read")] }, async (request) => {
-  if (!database) return { customers: [], note: "No database connected." };
+  if (!database) return { customers: [], total: 0, page: 1, limit: 20, note: "No database connected." };
+  const query = request.query as { page?: string; limit?: string };
+  const VALID_PAGE_SIZES = [10, 20, 50, 100, 500];
+  const limit = VALID_PAGE_SIZES.includes(Number(query.limit)) ? Number(query.limit) : 20;
+  const page = Math.max(1, Number(query.page) || 1);
+  const offset = (page - 1) * limit;
+
+  // Log staff access for audit trail (Guardrail #6)
+  if (request.identity?.kind === "staff") {
+    logStaffAccess(request, "GET /customers", null, null);
+  }
+
   return withTenantClient(request.tenantContext!, async (client) => {
+    // Get total count for pagination
+    const countResult = await client.query("select count(*)::int as total from customers");
+    const total = countResult.rows[0]?.total ?? 0;
+
     // Note: the customers table's column is contact_number, not phone (see
     // db/migrations/0001_init.sql) — aliased below so the API's response
     // shape (and the frontend's Customer type) can stay as `phone` without
-    // the frontend needing to know the underlying column name. Caught by
-    // actually running this query against the real seeded schema locally —
-    // it had been referencing a column that never existed, unnoticed
-    // because the frontend didn't check /customers' response status (fixed
-    // in apps/web/src/App.tsx) and silently rendered "No customers yet."
-    // for what was actually a 500 error every time.
-    // limit 1000 is a stopgap, not real pagination — fine while the
-    // biggest builder has ~300 customers, but this needs proper
-    // page/cursor params before that stops being true. Was capped at 200,
-    // which silently hid 88 of Shilpkaar's 288 real customers once seed
-    // data was loaded — caught by comparing the on-screen count to the row
-    // count confirmed in Neon.
+    // the frontend needing to know the underlying column name.
     const result = await client.query(
-      "select id, full_name, contact_number as phone, email, stage, created_at from customers order by created_at desc limit 1000"
+      "select id, full_name, contact_number as phone, email, stage, created_at from customers order by created_at desc limit $1 offset $2",
+      [limit, offset]
     );
-    return { customers: result.rows };
+    return {
+      customers: result.rows,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   });
 });
 
@@ -112,6 +138,11 @@ app.get("/builders", { preHandler: [requireAuth(), requireCapability("users.mana
 app.get("/customers/:id", { preHandler: [requireAuth(), requireCapability("customers.read")] }, async (request, reply) => {
   if (!database) return reply.code(503).send({ error: "No database connected." });
   const { id } = request.params as { id: string };
+
+  // Log staff access for audit trail (Guardrail #6)
+  if (request.identity?.kind === "staff") {
+    logStaffAccess(request, "GET /customers/:id", null, null);
+  }
 
   return withTenantClient(request.tenantContext!, async (client) => {
     const custResult = await client.query(
@@ -404,6 +435,12 @@ app.post("/customers/:id/payments", { preHandler: [requireAuth(), requireCapabil
 // staff is a later addition, not this one.
 app.get("/dashboard/overview", { preHandler: [requireAuth(), requireCapability("reports.read")] }, async (request) => {
   if (!database) return { kpis: null, pipeline: null, note: "No database connected." };
+
+  // Log staff access for audit trail (Guardrail #6)
+  if (request.identity?.kind === "staff") {
+    logStaffAccess(request, "GET /dashboard/overview", null, null);
+  }
+
   return withTenantClient(request.tenantContext!, async (client) => {
     const result = await client.query(`
       with due_milestones as (
@@ -636,6 +673,12 @@ app.get("/dashboard/daily-collection", { preHandler: [requireAuth(), requireCapa
   if (!database) return { dailyCollection: [] };
   const query = request.query as { weeks?: string };
   const weeks = ALLOWED_DAILY_WEEKS.includes(Number(query.weeks)) ? Number(query.weeks) : 12;
+
+  // Log staff access for audit trail (Guardrail #6)
+  if (request.identity?.kind === "staff") {
+    logStaffAccess(request, "GET /dashboard/daily-collection", null, null);
+  }
+
   // Never interpolates `weeks` into the SQL string — only ever one of the
   // four whitelisted values above reaches here, then goes in as a bound
   // parameter regardless.
