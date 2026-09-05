@@ -39,7 +39,7 @@ describe("Collections authorization catalogue", () => {
       }),
     };
     const result = await requireCapability("payments.reverse")(
-      { context: { capabilities: capabilitiesForRole("finance_operator") } } as never,
+      { tenantContext: { capabilities: capabilitiesForRole("finance_operator") } } as never,
       reply as never
     );
     expect(result).toEqual({

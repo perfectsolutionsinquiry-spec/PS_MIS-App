@@ -129,11 +129,11 @@ export function hasCollectionsCapability(role: string, capability: CollectionsCa
 
 // Fastify preHandler gate: lets the request through only when its resolved
 // identity carries this capability. requireAuth must run first — it is what
-// populates request.context. Kept beside the catalogue so the capability set
-// and the way it is enforced live in one place.
+// populates request.tenantContext. Kept beside the catalogue so the
+// capability set and the way it is enforced live in one place.
 export function requireCapability(capability: CollectionsCapability) {
   return async (request: FastifyRequest, reply: FastifyReply) => {
-    if (!request.context?.capabilities.has(capability)) {
+    if (!request.tenantContext?.capabilities.has(capability)) {
       return reply.code(403).send({
         error: `This account does not have the ${capability} capability.`,
       });

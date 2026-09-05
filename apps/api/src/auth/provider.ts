@@ -50,7 +50,7 @@ export function makeRequireAuth(provider: AuthProvider) {
       return reply;
     }
 
-    let userId: string;
+    let userId: string | null;
     try {
       userId = await provider.verifyToken(token);
     } catch (err) {
@@ -75,7 +75,10 @@ export function makeRequireAuth(provider: AuthProvider) {
     }
 
     request.identity = identity;
-    request.context = {
+    // Named tenantContext (not Fastify's own built-in `request.context`,
+    // which is reserved for Fastify's route context and cannot be
+    // re-declared by an app).
+    request.tenantContext = {
       applicationId: "collections",
       userId: identity.kind === "staff" ? identity.staffId : identity.builderUserId,
       tenantId: identity.kind === "staff" ? null : identity.builderId,
@@ -119,7 +122,9 @@ export type RequestContext = {
 declare module "fastify" {
   interface FastifyRequest {
     identity?: Identity;
-    context?: RequestContext;
+    // `context` itself is taken by Fastify's route context, so the app's
+    // tenant-aware request context gets its own, unambiguous name.
+    tenantContext?: RequestContext;
   }
 }
 
