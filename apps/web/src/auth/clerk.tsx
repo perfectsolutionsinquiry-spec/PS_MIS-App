@@ -9,6 +9,7 @@ import {
   SignIn,
   UserButton,
   useAuth as useClerkAuth,
+  useUser as useClerkUser,
 } from "@clerk/clerk-react";
 import { AuthContext, type AuthContextValue } from "./context";
 
@@ -39,7 +40,11 @@ export function ClerkAuthProvider({ children }: { children: ReactNode }) {
 }
 
 function ClerkBridge({ children }: { children: ReactNode }) {
-  const { isSignedIn, getToken, signOut, user } = useClerkAuth();
+  // Clerk splits session and profile across two hooks: useAuth() carries
+  // the token/session, useUser() the display name — both bridge into the
+  // single AuthContextValue every screen consumes.
+  const { isSignedIn, getToken, signOut } = useClerkAuth();
+  const { user } = useClerkUser();
 
   const value: AuthContextValue = {
     isSignedIn: !!isSignedIn,
