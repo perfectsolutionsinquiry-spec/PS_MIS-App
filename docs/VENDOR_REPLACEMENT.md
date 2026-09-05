@@ -94,8 +94,8 @@ Sign in at `http://localhost:8088` with that email/password.
    MIGRATE_BASELINE_UP_TO=0004_settings_and_soft_delete.sql npm run migrate --workspace=apps/api
    ```
    (`0005_vendor_neutral_auth.sql` renames `clerk_user_id` → `auth_user_id`,
-   preserving the existing values, and adds `password_hash` + `email`
-   columns.)
+   preserving the existing values, and re-adds `password_hash` as a nullable
+   column for local auth — both user tables already carry `email` from 0001.)
 2. Set passwords for the people who need to log in, using the same
    first-login script (`npm run local:set-password`).
 3. Configure the API:

@@ -10,9 +10,9 @@
 //   LOCAL_AUTH_PASSWORD='a-strong-password' \
 //   npm run local:set-password --workspace=apps/api
 //
-// Finds the user by email in staff_users first, then builder_users (using the
-// email column added by 0005_vendor_neutral_auth.sql, or the builders table's
-// email as a fallback for builder users linked to a builder with an email).
+// Finds the user by email in staff_users first, then builder_users (both
+// tables have carried an email column since 0001_init.sql; builder_users
+// additionally falls back to the builders table's contact email).
 
 import pg from "pg";
 import { hashPassword } from "../auth/local.js";

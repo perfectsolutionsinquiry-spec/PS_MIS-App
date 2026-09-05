@@ -10,8 +10,11 @@
 --      primary key, used as the JWT subject).
 --   2. Adds password_hash to staff_users and builder_users for local auth
 --      (AUTH_PROVIDER=local). Null for Clerk-managed users.
---   3. Adds email to builder_users (staff_users already has it) so local
---      auth can look up a builder user by email.
+--      (0002 dropped the 0001 password_hash columns; this re-introduces
+--      them in nullable form.)
+--   3. No email change needed: builder_users has had `email text not null
+--      unique` since 0001 (line 67), same as staff_users — local auth
+--      looks users up by that column directly.
 --
 -- Run via: npm run migrate --workspace=apps/api
 -- (or psql "$DATABASE_URL" -f db/migrations/0005_vendor_neutral_auth.sql)
@@ -23,6 +26,3 @@ alter table builder_users rename column clerk_user_id to auth_user_id;
 -- 2. Add password_hash for local auth (nullable — Clerk users don't need it)
 alter table staff_users add column password_hash text;
 alter table builder_users add column password_hash text;
-
--- 3. Add email to builder_users for local-auth login lookup
-alter table builder_users add column email text;
